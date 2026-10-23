@@ -3,7 +3,9 @@
 
 > **Farah AYARI** — ESPRIT | **Supervisor:** Mrs. Ahlem Ben Haddoud, Al Baraka Bank — Centre Urbain Nord, Tunis | **2025–2026**
 
-![Cover Logos](assets/al-baraka-bank-tunisia-logo-red-orange-1.png) ![ESPRIT](assets/esprit-tunisia-logo-private-engineering--3.jpg)
+![Al Baraka Logo](assets/albaraka.png) ![ESPRIT Logo](assets/esprit.png)
+
+> *All diagrams in this report are self-generated (matplotlib) — no external screenshots are used; only the two official logos above are kept.*
 
 *The full PDF with the beautiful cover, diagrams and tables is [`Farah_Ayari_Internship_Report.pdf`](./Farah_Ayari_Internship_Report.pdf) — this Markdown is the source for the same content.*
 
@@ -136,8 +138,8 @@ A **single coherent product** made of two systems that talk through a stable con
 
 ### 3.1 The End-to-End Flow
 
-![System Architecture - Full](assets/architecture_schema.png)
-*Figure 1 — Full architecture: Generation 1 (flat lab) → pivot → Generation 2 (four governed layers) → current update. The engine is external and addressed by `ip:port`.*
+![System Architecture — Self-generated](assets/diagram_architecture.png)
+*Figure 1 — End-to-end architecture (self-generated diagram). Browser is the only public edge; RAGLab is never exposed to the Internet and is addressed by `ip:port` on a private network.*
 
 ```
 Browser  ──▶  nginx (Angular SPA, /api proxy)
@@ -158,8 +160,8 @@ RAGLab itself:
   Classify Intent → Plan Evidence → Retrieve (dense top-5) → Check Sufficiency → Generate (Qwen) → Gate (quote + number) → Scrub PII → Audit
 ```
 
-![Workflow](assets/workflow.png)
-*Figure 2 — Customer chat path: two-phase metering, streaming relay and persistence. The edge is the single writer.*
+![Request Lifecycle — Self-generated](assets/diagram_lifecycle.png)
+*Figure 2 — Request lifecycle: from question to grounded answer. Every step before generation is deterministic; the model is called only when evidence exists.*
 
 
 **Key separation:** the *business schema* (users, sessions, messages, documents, quotas) belongs to **Java + Flyway**. The *vector index* belongs to the **Python agent**. No shared-DB write coupling.
@@ -288,16 +290,10 @@ The web app is **the only public edge**. RAGLab is never exposed to the Internet
 
 ### 5.2 Public Experience
 
-![Login Split](assets/before-after-01-login.png)
-*The new identity split: Client vs Staff login — the boundary that makes customer-data isolation possible.*
+![Chunking Strategy — Self-generated](assets/diagram_chunking.png)
+*Figure 3 — Structure-aware chunking: blind windows cut articles; restructure preserves them with breadcrumb ancestry (+20 pp hit@1).*
 
-![Dashboard](assets/before-after-02-dashboard.png)
-*Client dashboard: accounts, cards and transactions in one place.*
-
-![Chat Answers](assets/before-after-14-chat-answers.png)
-*Chat answers: grounded responses with structured citations vs honest refusals — never a guess.*
-
-* **Landing page at `/`:** trilingual hero, products, assistant showcase, services, FAQ, footer — brand tokens from the official Al Baraka palette (Red `#E0122F`, Orange `#F5881C`) with RTL support.
+* **Landing page at `/`:** trilingual hero, products, assistant showcase, services, FAQ, footer — brand tokens from Al Baraka palette (Red `#E0122F`, Orange `#F5881C`) with RTL support.
 * **Floating assistant widget:** same SSE endpoints as authenticated chat, with its own session — reachable without login, quota-limited.
 * **Authentication split:** **Client** vs **Staff** tabs on login, role-based redirect. Registration at `/register`.
 * **Client portal `/portal`:** accounts, cards, transactions, financing simulations, advisor appointments, profile, and a ChatGPT-style assistant that carries the client's own conversation history.

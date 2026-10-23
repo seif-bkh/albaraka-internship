@@ -14,17 +14,18 @@ It is written around **ideas, architecture and problems solved**, not a chronolo
 
 | File | What it is | How to use it |
 |---|---|---|
-| [`Farah_Ayari_Internship_Report.pdf`](./Farah_Ayari_Internship_Report.pdf) | **The report as a beautiful PDF (18 pages)** — cover, dedications, 10 chapters, references & appendices | Open directly; print-ready (A4). Generated with `fpdf2` — no LaTeX install needed to read it. |
-| [`report.md`](./report.md) | **The same report in Markdown** — with tables, figures and image links | Render on GitHub / VS Code. Source for the PDF content. |
-| [`report.tex`](./report.tex) | **The same report in LaTeX** — compiles on Overleaf with `pdflatex` (2 passes) | Upload `report.tex` + the `assets/` folder to Overleaf. Uses only standard packages (`tikz`, `tcolorbox`, `booktabs`, `geometry`, `fancyhdr`). No Arabic fonts required (terms transliterated). |
-| `assets/` | Logos (Al Baraka, ESPRIT), architecture diagram, workflow, UI screenshots | Referenced by all three formats. |
+| [`Farah_Ayari_Internship_Report.pdf`](./Farah_Ayari_Internship_Report.pdf) | **The report as a clean PDF (16 pages, A4)** — cover, dedications, 10 chapters, references & appendices | Open directly; print-ready A4. Generated with `fpdf2` — no LaTeX install needed. |
+| [`report.md`](./report.md) | **The same report in Markdown** — with tables and self-generated diagrams | Render on GitHub / VS Code. Source for the PDF content. |
+| [`report.tex`](./report.tex) | **The same report in LaTeX** — compiles on Overleaf with `pdflatex` (2 passes) | Upload `report.tex` + the `assets/` folder to Overleaf. Uses only standard packages (`tikz`, `booktabs`, `geometry`, `fancyhdr`). No Arabic fonts required (terms transliterated). |
+| `assets/` | Only two official logos + 3 self-generated diagrams (`diagram_*.png`) | All diagrams are made by us (`make_diagrams.py`); no external screenshots. |
 | `generate_pdf.py` | Python script that built the PDF (`pip install fpdf2 pillow`) | `python3 generate_pdf.py` regenerates the PDF. |
+| `make_diagrams.py` | Generates the 3 diagrams with matplotlib | `python3 make_diagrams.py` recreates `assets/diagram_*.png` |
 
 ## How it was built
 
 - **Data sources:** `RAGLab/RAGLAB_FULL_REPORT.md`, `RAGLab/internship_report/INTERNSHIP_REPORT.md`, `RAGLab/RAGLAB_SPEC.md`, `bank-assistant/docs/PROJECT_REPORT.md`, `bank-assistant/PLAN_TO_PROD.md`, `bank-assistant/docs/CUSTOMER_PII_REPORT.md`, plus institutional context scraped responsibly from `albaraka.com.tn` and the Tunisian Official Journal (Law 2016-48).
-- **Cover & palette:** Al Baraka Red `#E0122F` + Orange `#F5881C` + ESPRIT Navy `#1B2A4E`, Soft Gray `#F5F7FB` — the same tokens the front-end uses, so the report and the product share an identity.
-- **Figures:** `assets/architecture_schema.png` (3000×2780) and `assets/workflow.png` (1360×1180) from the repositories, plus `assets/before-after-*.png` UI screenshots.
+- **Cover & palette:** Minimal — white with thin red top line + navy footer; only Al Baraka Red `#E0122F` and ESPRIT Navy `#1B2A4E` as accents.
+- **Figures:** All 3 diagrams are **self-generated** with matplotlib (`diagram_architecture.png`, `diagram_lifecycle.png`, `diagram_chunking.png`) — correctly fitted to A4 with preserved aspect ratios; no screenshots.
 
 ## Reproduce
 

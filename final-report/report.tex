@@ -125,20 +125,13 @@
 % Logos — side by side, correct aspect ratio, no stretch
 \begin{center}
 \begin{tabular}{c@{\hspace{1.4cm}}c}
-\IfFileExists{assets/esprit-tunisia-logo-private-engineering--3.jpg}{
-  \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--3.jpg}
-}{
-  \IfFileExists{assets/esprit-tunisia-logo-private-engineering--1.png}{
-    \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--1.png}
-  }{{\small\bfseries\color{espritNavy} ESPRIT}}
-}
+\IfFileExists{assets/esprit.png}{
+  \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit.png}
+}{{\small\bfseries\color{espritNavy} ESPRIT}}
 &
-\IfFileExists{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}{
-  \includegraphics[height=1.6cm,keepaspectratio]{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}
-}{
-  \IfFileExists{assets/albaraka-front.png}{
-    \includegraphics[height=1.6cm,keepaspectratio]{assets/albaraka-front.png}
-  }{{\small\bfseries\color{abarakaRed} Al Baraka Bank}}
+\IfFileExists{assets/albaraka.png}{
+  \includegraphics[height=1.6cm,keepaspectratio]{assets/albaraka.png}
+}{{\small\bfseries\color{abarakaRed} Al Baraka Bank}}
 } \\
 {\scriptsize\color{espritNavy!70}\textit{Ariana --- est.\ 2003}} & {\scriptsize\color{abarakaRed!75}\textit{Islamic Banking --- 44 branches}} \\
 \end{tabular}
@@ -347,12 +340,12 @@ The product was defined with five properties, in strict priority order:
 
 \begin{figure}[H]
 \centering
-\IfFileExists{assets/architecture_schema.png}{
-  \includegraphics[width=0.97\textwidth]{assets/architecture_schema.png}
-  \caption{Full architecture: from browser to intelligence. Generation 1 (flat lab), the pivot, Generation 2 (four governed layers), and the current update. The engine is external and addressed by \texttt{ip:port}.}
+\IfFileExists{assets/diagram_architecture.png}{
+  \includegraphics[width=0.92\textwidth]{assets/diagram_architecture.png}
+  \caption{End-to-end architecture (self-generated). Browser is the only public edge; RAGLab is never exposed to the Internet and is addressed by \texttt{ip:port} on a private network.}
   \label{fig:arch}
 }{
-  \fbox{\parbox{0.9\textwidth}{\centering\textit{Architecture diagram: browser $\rightarrow$ nginx $\rightarrow$ Spring Boot edge $\rightarrow$ RAGLab $\rightarrow$ Postgres \\ (see assets/architecture\_schema.png)}}}
+  \fbox{\parbox{0.9\textwidth}{\centering\textit{Architecture diagram (self-generated): browser $\rightarrow$ nginx $\rightarrow$ Spring Boot $\rightarrow$ RAGLab $\rightarrow$ Postgres}}}
 \end{figure}
 
 \noindent In words:
@@ -404,16 +397,16 @@ This sobriety is intentional: \textbf{no orchestration framework, no external ve
 \item \textbf{Conversation lifecycle:} browser $\rightarrow$ edge (quota gate) $\rightarrow$ RAGLab (retrieval $\rightarrow$ generation $\rightarrow$ gate) $\rightarrow$ edge (scrub $\rightarrow$ persist $\rightarrow$ settle quota $\rightarrow$ stream). The edge opens the exchange row \textbf{before} calling the engine so even a failure is visible to staff.
 \end{itemize}
 
-Figure~\ref{fig:workflow} shows the chat path as the customer experiences it.
+Figure~\ref{fig:workflow} shows the lifecycle as a self-generated diagram.
 
 \begin{figure}[H]
 \centering
-\IfFileExists{assets/workflow.png}{
-  \includegraphics[width=0.92\textwidth]{assets/workflow.png}
-  \caption{Customer chat path: two-phase metering, streaming, and persistence. The edge is the single writer.}
+\IfFileExists{assets/diagram_lifecycle.png}{
+  \includegraphics[width=0.95\textwidth]{assets/diagram_lifecycle.png}
+  \caption{Request lifecycle (self-generated): from question to grounded answer. Every step before generation is deterministic; the model is called only when evidence exists.}
   \label{fig:workflow}
 }{
-  \fbox{\parbox{0.85\textwidth}{\centering\textit{Workflow diagram (assets/workflow.png)}}}
+  \fbox{\parbox{0.85\textwidth}{\centering\textit{Lifecycle diagram (self-generated)}}}
 }
 \end{figure}
 
@@ -556,25 +549,16 @@ The web app is \textbf{the only public edge}. RAGLab is never exposed to the Int
 
 \textbf{Authentication split:} \textit{Client} vs \textit{Staff} tabs on login, role-based redirect, registration at \texttt{/register}.
 
-\textbf{Client portal \texttt{/portal}:} accounts, cards, transactions, financing simulations, advisor appointments, profile, and a ChatGPT-style assistant carrying the client's own history. Figure~\ref{fig:ui} shows the before/after of the portal redesign.
+\textbf{Client portal \texttt{/portal}:} accounts, cards, transactions, financing simulations, advisor appointments, profile, and a ChatGPT-style assistant carrying the client's own history.
 
 \begin{figure}[H]
 \centering
-\IfFileExists{assets/before-after-01-login.png}{
-  \includegraphics[width=0.96\textwidth]{assets/before-after-01-login.png}
-  \caption{Portal identity: dedicated Client vs Staff login with role-based redirect.}
+\IfFileExists{assets/diagram_chunking.png}{
+  \includegraphics[width=0.92\textwidth]{assets/diagram_chunking.png}
+  \caption{Structure-aware chunking (self-generated): blind windows cut articles; restructure preserves them with breadcrumb ancestry (+20 pp hit@1).}
   \label{fig:ui}
 }{
-  \fbox{\parbox{0.9\textwidth}{\centering UI screenshots (assets/before-after-*.png)}}
-}
-\end{figure}
-\begin{figure}[H]
-\centering
-\IfFileExists{assets/before-after-14-chat-answers.png}{
-  \includegraphics[width=0.96\textwidth]{assets/before-after-14-chat-answers.png}
-  \caption{Chat answers: grounded responses with structured citations vs honest refusals.}
-}{
-  \fbox{\parbox{0.9\textwidth}{\centering Chat answer screenshots}}
+  \fbox{\parbox{0.9\textwidth}{\centering\textit{Chunking diagram (self-generated)}}}
 }
 \end{figure}
 

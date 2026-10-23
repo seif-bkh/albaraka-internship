@@ -85,13 +85,8 @@ pdf.cell(72, 3, "Al Baraka Bank  -  Since 1983  -  44 branches", align="R")
 # logos — perfectly centered, no stretch, equal visual height ~18mm
 y_logos = 15
 # ESPRIT logo
-esprit = safe_image(os.path.join(ASSETS, "esprit-tunisia-logo-private-engineering--3.jpg"))
-if not esprit:
-    esprit = safe_image(os.path.join(ASSETS, "esprit-tunisia-logo-private-engineering--1.png"))
-# albaraka
-albaraka = safe_image(os.path.join(ASSETS, "al-baraka-bank-tunisia-logo-red-orange-1.png"))
-if not albaraka:
-    albaraka = safe_image(os.path.join(ASSETS, "albaraka-front.png"))
+esprit = safe_image(os.path.join(ASSETS, "esprit.png"))
+albaraka = safe_image(os.path.join(ASSETS, "albaraka.png"))
 
 if esprit:
     image_correct(esprit, x=28, y=y_logos, h=16, max_w=55)
@@ -182,10 +177,9 @@ pdf.set_font("Helvetica", "", 5.5)
 pdf.set_text_color(150,160,180)
 pdf.cell(182, 3, "All figures are traceable to frozen benchmark artifacts in the two project repositories.", align="C")
 
-# small centered architecture preview — correct ratio, not stretched
-arch = safe_image(os.path.join(ASSETS, "architecture_schema.png"))
+# small centered architecture preview — correct ratio, not stretched (self-made diagram)
+arch = safe_image(os.path.join(ASSETS, "diagram_architecture.png"))
 if arch:
-    # place as faint preview, centered, height limited
     image_correct(arch, x=30, y=164, w=150, max_h=55)
 
 # bottom footer bar — minimal
@@ -484,7 +478,7 @@ paragraph("The web app provides a public landing page, a floating assistant widg
 # ── Ch3 ──
 chapter(3, "System Architecture", "The Full Picture  -  Browser to Intelligence")
 section("End-to-End Flow")
-fig(os.path.join(ASSETS,"architecture_schema.png"), "Full architecture: Generation 1 (flat lab) -> pivot -> Generation 2 (four governed layers) -> current update. The engine is addressed by ip:port on a private network.", w=155)
+fig(os.path.join(ASSETS,"diagram_architecture.png"), "End-to-end architecture: browser is the only public edge. RAGLab is never exposed to the Internet; it is addressed by ip:port on a private network.", w=158)
 paragraph("In words: the browser talks only to nginx (Angular SPA, security headers, SSE). Nginx proxies /api to the Spring Boot edge (Java 21) which owns authentication, roles, quotas, persistence and admin. The edge calls RAGLab over an authenticated internal contract (X-Service-Token) and streams the answer back. PostgreSQL (Flyway, 15 migrations, single writer, ddl-auto=validate) holds the business schema. The vector index lives inside the Python agent - no shared-DB write coupling. The edge opens the exchange row before calling the engine, so even a failure is visible.")
 section("Why This Separation Is the Design")
 paragraph("The split is the guarantee: the business schema can evolve without re-indexing; the index can be rebuilt without migrating the business database. An admin switching the engine, a document re-published or a model key rotated all flow through explicit, audited actions.")
@@ -501,7 +495,7 @@ table(["Layer","Choice","Why"],[
 section("Two Lifecycles")
 bullet("Document: POST /documents (content-hash versioned; identical bytes = no-op; SHA-256 dedup) then batch POST /ingest (one job at a time; 409 is a state). The edge's documents table is a mirror - RAGLab owns the index and reports pending/indexed/stale honestly.")
 bullet("Conversation: browser -> edge (quota gate) -> RAGLab (retrieval -> generation -> gate) -> edge (scrub -> persist -> settle -> stream).")
-fig(os.path.join(ASSETS,"workflow.png"), "Customer chat path: two-phase metering, streaming relay and persistence. The edge is the single writer; streaming is end-to-end (Python -> Java -> browser).", w=148)
+fig(os.path.join(ASSETS,"diagram_lifecycle.png"), "Request lifecycle: from question to grounded answer. Every step before generation is deterministic; the model is called only when evidence exists.", w=160)
 
 # ── Ch4 ──
 chapter(4, "The Intelligence Engine - RAGLab", "How It Thinks: From Scan to Grounded Answer")
@@ -549,8 +543,8 @@ paragraph("The web app is the only public edge. RAGLab is never on the Internet;
 section("Customer Experience")
 bullet("Landing at /: trilingual hero, products, assistant showcase, services, FAQ, footer - palette Red #E0122F / Orange #F5881C, RTL support. Floating widget with own session, quota-limited, no login needed.")
 bullet("Auth split: Client vs Staff tabs, role-based redirect, /register. Portal /portal: accounts, cards, transactions, financing simulations, advisor appointments, profile + ChatGPT-style assistant with own history.")
-fig(os.path.join(ASSETS,"before-after-01-login.png"), "Login: dedicated Client vs Staff tabs - the split that enables customer-data isolation.", w=158)
-fig(os.path.join(ASSETS,"before-after-14-chat-answers.png"), "Chat: grounded answers with citations vs honest refusals - never a guess.", w=158)
+# (UI screenshots removed — only generated diagrams are used; see diagram_*.png)
+fig(os.path.join(ASSETS,"diagram_chunking.png"), "Structure-aware chunking: blind windows cut articles; restructure preserves them with breadcrumb ancestry (+20 pp hit@1).", w=158)
 section("Core Banking Data Model (V15)")
 table(["Domain","Tables & Key Fields"],[
  ["Identity & Risk","clients (CIN, ABK######, KYC, risk, branch agence_id, employer, income)"],
