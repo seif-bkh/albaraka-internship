@@ -61,7 +61,6 @@
 \newcommand{\ReportTitleB}{for Islamic Banking}
 \newcommand{\ReportSubtitle}{The Integrated RAGLab \& Bank Assistant Platform}
 \newcommand{\ReportTagline}{A retrieval-augmented system where every answer is traceable, every \\ refusal is honest, and every decision is auditable}
-\newcommand{\DegreeName}{Engineering Degree --- Software Engineering}
 
 % ── Hyperref ───────────────────────────────────────────────────────────
 \hypersetup{
@@ -108,130 +107,83 @@
 % ── Document start ────────────────────────────────────────────────────
 \begin{document}
 
-% ══════════════════════════════ COVER PAGE ═════════════════════════════
+% ══════════════════════════════ COVER PAGE — SIMPLE & CLEAN ═════════════
 \begin{titlepage}
-% --- Background layers ---
+% Top thin red line
 \begin{tikzpicture}[remember picture, overlay]
-  % Full page white base
-  \fill[white] (current page.south west) rectangle (current page.north east);
-  % Top decorative band (red → orange gradient simulated with multiple rects)
-  \fill[abarakaRed] ($(current page.north west)+(0,0)$) rectangle ($(current page.north east)+(0,-3.8cm)$);
-  \fill[abarakaRed!85!abarakaOrange] ($(current page.north west)+(0,-3.8cm)$) rectangle ($(current page.north east)+(0,-4.05cm)$);
-  \fill[abarakaOrange] ($(current page.north west)+(0,-4.05cm)$) rectangle ($(current page.north east)+(0,-4.85cm)$);
-  % Bottom thin bands
-  \fill[espritNavy] ($(current page.south west)+(0,0)$) rectangle ($(current page.south east)+(0,1.45cm)$);
-  \fill[abarakaRed] ($(current page.south west)+(0,1.45cm)$) rectangle ($(current page.south east)+(0,1.65cm)$);
-  % Subtle diagonal accent (opacity simulated)
-  \fill[white, opacity=0.09] ($(current page.north east)+(0,-4.85cm)$) -- ++(-13cm,-8cm) -- ++(0,8cm) -- cycle;
-  % Decorative dots
-  \foreach \x in {1,2,...,6}{
-    \fill[white, opacity=0.18] ($(current page.north east)+(-1.2cm - \x*0.7cm, -1.15cm)$) circle (1.1pt);
-  }
+  \fill[abarakaRed] (current page.north west) rectangle ($(current page.north east)+(0,-0.18cm)$);
+  \fill[espritNavy] (current page.south west) rectangle ($(current page.south east)+(0,1.0cm)$);
 \end{tikzpicture}
 
-% --- Top white text on red band ---
-\vspace*{-0.9cm}
+\vspace*{0.2cm}
 \begin{center}
-{\small\color{white}\bfseries\scshape Republic of Tunisia}\\[1pt]
-{\footnotesize\color{white!92} Ministry of Higher Education and Scientific Research}\\[0.15cm]
-{\tiny\color{white!88} \SchoolName\ \ {\color{white}$\bullet$} \ CompanyName\ ---\ \CompanySite}
+{\footnotesize\color{gray!60} ESPRIT --- Private Higher School of Engineering and Technology \quad\textbar\quad Al Baraka Bank --- Since 1983}
+\end{center}
+
+\vspace{0.5cm}
+
+% Logos — side by side, correct aspect ratio, no stretch
+\begin{center}
+\begin{tabular}{c@{\hspace{1.4cm}}c}
+\IfFileExists{assets/esprit-tunisia-logo-private-engineering--3.jpg}{
+  \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--3.jpg}
+}{
+  \IfFileExists{assets/esprit-tunisia-logo-private-engineering--1.png}{
+    \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--1.png}
+  }{{\small\bfseries\color{espritNavy} ESPRIT}}
+}
+&
+\IfFileExists{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}{
+  \includegraphics[height=1.6cm,keepaspectratio]{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}
+}{
+  \IfFileExists{assets/albaraka-front.png}{
+    \includegraphics[height=1.6cm,keepaspectratio]{assets/albaraka-front.png}
+  }{{\small\bfseries\color{abarakaRed} Al Baraka Bank}}
+} \\
+{\scriptsize\color{espritNavy!70}\textit{Ariana --- est.\ 2003}} & {\scriptsize\color{abarakaRed!75}\textit{Islamic Banking --- 44 branches}} \\
+\end{tabular}
 \end{center}
 
 \vspace{0.35cm}
-
-% --- Logos row (placeholder frames with text, replaced by images if available) ---
 \begin{center}
-\begin{tikzpicture}
-  % ESPRIT logo placeholder — left
-  \node[draw=white!40, fill=white, rounded corners=3pt, minimum width=5.2cm, minimum height=2.1cm, inner sep=4pt] (esprit) at (-4.5,0) {
-    \begin{minipage}{4.6cm}\centering
-      \IfFileExists{assets/esprit-tunisia-logo-private-engineering--1.png}{
-        \includegraphics[width=3.6cm,height=1.45cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--1.png}
-      }{
-        \IfFileExists{assets/esprit-ariana.jpg}{
-          \includegraphics[width=3.6cm,height=1.45cm,keepaspectratio]{assets/esprit-ariana.jpg}
-        }{
-          {\small\bfseries\color{espritNavy} ESPRIT}\\{\tiny\color{espritNavy} Private Higher School of\\ Engineering \& Technology}
-        }
-      }\\
-      {\tiny\color{espritNavy!70} \textit{Ariana --- est. 2003}}
-    \end{minipage}
-  };
-  % Separator
-  \draw[white!35, line width=0.4pt] (-1.4,-1.05) -- (-1.4,1.05);
-  % Al Baraka logo placeholder — right
-  \node[draw=white!40, fill=white, rounded corners=3pt, minimum width=5.2cm, minimum height=2.1cm, inner sep=4pt] (baraka) at (4.5,0) {
-    \begin{minipage}{4.6cm}\centering
-      \IfFileExists{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}{
-        \includegraphics[width=3.6cm,height=1.45cm,keepaspectratio]{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}
-      }{
-        \IfFileExists{assets/albaraka-front.png}{
-          \includegraphics[width=3.6cm,height=1.45cm,keepaspectratio]{assets/albaraka-front.png}
-        }{
-          {\small\bfseries\color{abarakaRed} Al Baraka Bank}\\{\tiny\color{abarakaRed!80} Your Partner Bank}
-        }
-      }\\
-      {\tiny\color{abarakaRed!70} \textit{Islamic Banking since 1983}}
-    \end{minipage}
-  };
-\end{tikzpicture}
+{\scriptsize\color{gray!70} \hrule width 4cm height 0.4pt}
 \end{center}
 
-\vspace{0.55cm}
+\vspace{0.6cm}
 
-% --- Main title block ---
 \begin{center}
-{\footnotesize\color{espritNavy!75}\scshape\bfseries Internship Report \quad$\vert$\quad End-of-Studies Project}\\[0.38cm]
-{\Huge\bfseries\color{chapterBlue} \ReportTitleA}\\[0.12cm]
-{\Huge\bfseries\color{abarakaRed} \ReportTitleB}\\[0.35cm]
-{\large\color{textDark!85}\textit{\ReportSubtitle}}\\[0.35cm]
-% tagline in box
-\begin{tikzpicture}
-  \node[fill=softGray, rounded corners=4pt, inner sep=8pt, draw=midGray, line width=0.4pt] {
-    \begin{minipage}{13.5cm}\centering
-      \footnotesize\color{textDark!78}\textit{\ReportTagline}
-    \end{minipage}
-  };
-\end{tikzpicture}\\[0.45cm]
-% Subject tag
-{\small\color{white}\colorbox{chapterBlue}{\ \ Final-Year Engineering Internship \quad$\vert$\quad \DegreeName\ \ }}\\[0.25cm]
-{\small\color{espritNavy!72}\textit{Architecture, integration and governance of a banking RAG platform}}
+{\footnotesize\color{espritNavy!75}\scshape\bfseries Internship Report}\\[0.45cm]
+{\LARGE\bfseries\color{espritNavy} \ReportTitleA}\\[0.14cm]
+{\LARGE\bfseries\color{abarakaRed} \ReportTitleB}\\[0.5cm]
+{\normalsize\color{textDark!80}\textit{\ReportSubtitle}}\\[0.5cm]
+{\footnotesize\color{textDark!65}\textit{Every answer cites its source.\quad Every refusal explains why.}}\\[0.4cm]
 \end{center}
 
-\vspace{0.45cm}
+\vspace{0.5cm}
 
-% --- Student / Supervisor info in elegant card ---
+% Simple info block — no heavy background, just a light box with thin border
 \begin{center}
-\begin{tikzpicture}
-\node[fill=white, draw=midGray, rounded corners=5pt, inner sep=0, drop shadow={shadow xshift=1.5pt, shadow yshift=-1.5pt, opacity=0.10}] (card) {
-\begin{minipage}{14.2cm}
-\vspace{6pt}
-\begin{tabular}{p{4.0cm} p{9.6cm}}
-\small\bfseries\color{espritNavy} Student &
-  \small\color{textDark} \StudentName\ --- \SchoolName \\[3pt]
-\small\bfseries\color{espritNavy} Host Organization &
-  \small\color{textDark} \CompanyName\ --- \CompanySite \\[3pt]
-\small\bfseries\color{abarakaRed} Supervisor &
-  \small\color{textDark} \SupervisorName\ --- Advisor, Al Baraka Bank (Centre Urbain Nord) \\[3pt]
-\small\bfseries\color{espritNavy} Academic Year &
-  \small\color{textDark} \AcademicYear\qquad{\color{midGray}$\vert$}\qquad \small\color{espritNavy!75} \textit{ESPRIT --- Software Engineering} \\
+\begin{tabular}{|p{13.2cm}|}
+\hline
+\\[-6pt]
+\begin{tabular}{p{3.6cm}p{9.2cm}}
+\small\bfseries\color{espritNavy} Student & \small\color{textDark} \StudentName\ --- \SchoolName \\[2pt]
+\small\bfseries\color{espritNavy} Host organization & \small\color{textDark} \CompanyName\ --- \CompanySite \\[2pt]
+\small\bfseries\color{abarakaRed} Supervisor & \small\color{textDark} \SupervisorName\ --- Advisor, Al Baraka Bank (Centre Urbain Nord) \\[2pt]
+\small\bfseries\color{espritNavy} Academic year & \small\color{textDark} \AcademicYear \\[2pt]
 \end{tabular}
-\vspace{6pt}
-\end{minipage}
-};
-% small red accent line on left of card
-\fill[abarakaRed] ($(card.north west)+(0,-0.22cm)$) rectangle ($(card.south west)+(0.12cm,0.22cm)$);
-\end{tikzpicture}
+\\[-4pt]
+\hline
+\end{tabular}
 \end{center}
 
 \vfill
 
-% --- Bottom bar text (on navy background) ---
 \begin{center}
-{\footnotesize\color{white!90} \textbf{Trust through traceability} \quad$\cdot$\quad Every answer cites its source \quad$\cdot$\quad Every refusal explains why}\\[0.12cm]
-{\tiny\color{white!72} No account identifiers, repository URLs, or credentials appear in this report by design. All figures are traceable to frozen benchmark artifacts.}
+{\footnotesize\color{gray!65}\textit{Internship report --- No account identifiers, repository URLs or credentials are included by design.}}\\[2pt]
+{\scriptsize\color{gray!55} All figures are traceable to frozen benchmark artifacts in the two project repositories.}
 \end{center}
-\vspace{0.15cm}
+\vspace{0.2cm}
 
 \end{titlepage}
 % ════════════════════════════ END COVER ════════════════════════════════

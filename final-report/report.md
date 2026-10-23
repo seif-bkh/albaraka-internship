@@ -18,7 +18,6 @@
 | **Host Organization** | **Al Baraka Bank Tunisia** — Centre Urbain Nord, Avenue Cheikh Mohamed Fadhel Ben Achour, 1082 Tunis |
 | **Supervisor** | **Mrs. Ahlem Ben Haddoud** — Advisor, Al Baraka Bank |
 | **Academic Year** | 2025 – 2026 |
-| **Program** | Engineering Degree — Software Engineering |
 | **Subject** | Design and Integration of a Governed Retrieval-Augmented Generation System for Banking Knowledge |
 
 ---
