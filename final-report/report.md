@@ -3,7 +3,7 @@
 
 > **Farah AYARI** — ESPRIT | **Supervisor:** Mrs. Ahlem Ben Haddoud, Al Baraka Bank — Centre Urbain Nord, Tunis | **2025–2026**
 
-![Cover Logos](assets/al-baraka-bank-tunisia-logo-red-orange-1.png) ![ESPRIT](assets/esprit-tunisia-logo-private-engineering--3.jpg)
+![ESPRIT](assets/logo_esprit_clean.png) ![Al Baraka Bank Tunisia](assets/logo_albaraka_clean.png)
 
 *The full PDF with the beautiful cover, diagrams and tables is [`Farah_Ayari_Internship_Report.pdf`](./Farah_Ayari_Internship_Report.pdf) — this Markdown is the source for the same content.*
 
@@ -136,30 +136,11 @@ A **single coherent product** made of two systems that talk through a stable con
 
 ### 3.1 The End-to-End Flow
 
-![System Architecture - Full](assets/architecture_schema.png)
-*Figure 1 — Full architecture: Generation 1 (flat lab) → pivot → Generation 2 (four governed layers) → current update. The engine is external and addressed by `ip:port`.*
+![End-to-End Platform Architecture](assets/diagrams/fig01_architecture.svg)
+*Figure 1 — End-to-end platform architecture across Public DMZ, Bank Application Edge, and Private Intelligence Engine.*
 
-```
-Browser  ──▶  nginx (Angular SPA, /api proxy)
-                 │  security headers, Server-Sent Events
-                 ▼
-            Spring Boot Edge (Java 21) ──▶ RAGLab (external http://<ip>:<port>)
-              auth (JWT, roles)             retrieval → grounded answer → gates
-              quotas, persistence,          returns text + citations + usage
-              admin, monitoring             NEVER writes business tables
-                    │
-                    ▼
-              PostgreSQL (Flyway, ddl-auto=validate)
-              15 migrations · schema single-owner
-
-RAGLab itself:
-  Load & Normalize → Structure-Aware Chunking → Embed (NVIDIA 2048-d) → Index (Chroma + BM25)
-                                      ↓
-  Classify Intent → Plan Evidence → Retrieve (dense top-5) → Check Sufficiency → Generate (Qwen) → Gate (quote + number) → Scrub PII → Audit
-```
-
-![Workflow](assets/workflow.png)
-*Figure 2 — Customer chat path: two-phase metering, streaming relay and persistence. The edge is the single writer.*
+![Conversation Execution Lifecycle](assets/diagrams/fig02_chat_sequence.svg)
+*Figure 2 — Customer chat path: striped virtual-thread quota metering, pre-call persistence, HTTP/1.1 streaming relay, and citation gating.*
 
 
 **Key separation:** the *business schema* (users, sessions, messages, documents, quotas) belongs to **Java + Flyway**. The *vector index* belongs to the **Python agent**. No shared-DB write coupling.
@@ -201,6 +182,9 @@ The evaluation corpus is **four real, unabridged Arabic documents**:
 | **Total** | | **339** |
 
 The PDFs are scanned legal Arabic: visual-order lines, reversed word order, corrupted digits, broken headings. This makes them **unusable without repair** — a problem solved linguistically, not algorithmically (see §6).
+
+![RAGLab Intelligence Pipeline](assets/diagrams/fig03_raglab_pipeline.svg)
+*Figure 3 — RAGLab dual-track architecture: offline linguistic restructuring & indexing (Track A) and online deterministic citation gating (Track B).*
 
 ### 4.2 Three-Step Structure-Aware Chunking
 
@@ -288,14 +272,8 @@ The web app is **the only public edge**. RAGLab is never exposed to the Internet
 
 ### 5.2 Public Experience
 
-![Login Split](assets/before-after-01-login.png)
-*The new identity split: Client vs Staff login — the boundary that makes customer-data isolation possible.*
-
-![Dashboard](assets/before-after-02-dashboard.png)
-*Client dashboard: accounts, cards and transactions in one place.*
-
-![Chat Answers](assets/before-after-14-chat-answers.png)
-*Chat answers: grounded responses with structured citations vs honest refusals — never a guess.*
+![Bank Assistant Functional Architecture & Identity Isolation](assets/diagrams/fig04_webapp_isolation.svg)
+*Figure 4 — Functional architecture of Bank Assistant enforcing strict isolation across Public Channel, Authenticated Client Portal (`/portal`), and Staff Control Room (`/admin/**`).*
 
 * **Landing page at `/`:** trilingual hero, products, assistant showcase, services, FAQ, footer — brand tokens from the official Al Baraka palette (Red `#E0122F`, Orange `#F5881C`) with RTL support.
 * **Floating assistant widget:** same SSE endpoints as authenticated chat, with its own session — reachable without login, quota-limited.
@@ -378,6 +356,9 @@ The linguistic repair itself was performed **batch by batch** (29 batches for th
 
 **Solution:** Structure-aware chunking (see §4.2). Measured gain: **+20 pp hit@1** (51 → 71 live; 42 → 62 offline). This single change outranked every retrieval-mode experiment.
 
+![Measured Retrieval & Knowledge Benchmarks](assets/diagrams/fig05_benchmarks.svg)
+*Figure 5 — Comparative hit@1 / hit@3 / hit@5 progression across chunking, fusion, reranking, and declarative unit indexing.*
+
 ### 6.3 Searching in Arabic With French/English Questions
 
 **Problem:** Users write technical terms in Latin script (*murabaha, sukuk*) while documents use Arabic script (*مرابحة, صكوك*). A lexical search has zero overlap; a pure vector search may miss without a bridge.
@@ -431,6 +412,9 @@ The linguistic repair itself was performed **batch by batch** (29 batches for th
 ## 7. Security, Privacy & Data Governance
 
 ### 7.1 Defense in Depth
+
+![Seven-Layer Defense-in-Depth Architecture](assets/diagrams/fig06_security_layers.svg)
+*Figure 6 — Seven-layer defense-in-depth & banking PII governance architecture.*
 
 | Layer | Mechanism |
 |---|---|
@@ -489,6 +473,9 @@ Internet —443(TLS at edge, HSTS)→ Edge Proxy (Traefik/nginx/LB) —80(privat
                               │
                            Postgres (PITR: daily full + WAL, 30-day retention, quarterly drill)
 ```
+
+![Immutable Digest Promotion & Production Topology](assets/diagrams/fig07_deployment_topology.svg)
+*Figure 7 — Immutable Git-SHA container promotion workflow and production runtime network/backup topology.*
 
 Postgres is managed-service where available; Flyway runs at backend boot (`spring.flyway.enabled=true`). `docker-compose.prod.yml` (per host, not committed) sets `prod` profile, removes host port mappings for backend/Postgres, and points at secret files. Kubernetes translation is one-to-one (each compose service → Deployment + ClusterIP; frontend is the only Ingress backend; NetworkPolicy allows RAGLab ingress only from backend).
 

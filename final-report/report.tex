@@ -125,21 +125,9 @@
 % Logos — side by side, correct aspect ratio, no stretch
 \begin{center}
 \begin{tabular}{c@{\hspace{1.4cm}}c}
-\IfFileExists{assets/esprit-tunisia-logo-private-engineering--3.jpg}{
-  \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--3.jpg}
-}{
-  \IfFileExists{assets/esprit-tunisia-logo-private-engineering--1.png}{
-    \includegraphics[height=1.6cm,keepaspectratio]{assets/esprit-tunisia-logo-private-engineering--1.png}
-  }{{\small\bfseries\color{espritNavy} ESPRIT}}
-}
+\includegraphics[height=1.5cm,keepaspectratio]{assets/logo_esprit_clean.png}
 &
-\IfFileExists{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}{
-  \includegraphics[height=1.6cm,keepaspectratio]{assets/al-baraka-bank-tunisia-logo-red-orange-1.png}
-}{
-  \IfFileExists{assets/albaraka-front.png}{
-    \includegraphics[height=1.6cm,keepaspectratio]{assets/albaraka-front.png}
-  }{{\small\bfseries\color{abarakaRed} Al Baraka Bank}}
-} \\
+\includegraphics[height=1.5cm,keepaspectratio]{assets/logo_albaraka_clean.png} \\
 {\scriptsize\color{espritNavy!70}\textit{Ariana --- est.\ 2003}} & {\scriptsize\color{abarakaRed!75}\textit{Islamic Banking --- 44 branches}} \\
 \end{tabular}
 \end{center}
@@ -347,12 +335,9 @@ The product was defined with five properties, in strict priority order:
 
 \begin{figure}[H]
 \centering
-\IfFileExists{assets/architecture_schema.png}{
-  \includegraphics[width=0.97\textwidth]{assets/architecture_schema.png}
-  \caption{Full architecture: from browser to intelligence. Generation 1 (flat lab), the pivot, Generation 2 (four governed layers), and the current update. The engine is external and addressed by \texttt{ip:port}.}
-  \label{fig:arch}
-}{
-  \fbox{\parbox{0.9\textwidth}{\centering\textit{Architecture diagram: browser $\rightarrow$ nginx $\rightarrow$ Spring Boot edge $\rightarrow$ RAGLab $\rightarrow$ Postgres \\ (see assets/architecture\_schema.png)}}}
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig01_architecture.png}
+\caption{End-to-end platform architecture across Public DMZ, Bank Application Edge, and Private Intelligence Engine.}
+\label{fig:arch}
 \end{figure}
 
 \noindent In words:
@@ -408,13 +393,9 @@ Figure~\ref{fig:workflow} shows the chat path as the customer experiences it.
 
 \begin{figure}[H]
 \centering
-\IfFileExists{assets/workflow.png}{
-  \includegraphics[width=0.92\textwidth]{assets/workflow.png}
-  \caption{Customer chat path: two-phase metering, streaming, and persistence. The edge is the single writer.}
-  \label{fig:workflow}
-}{
-  \fbox{\parbox{0.85\textwidth}{\centering\textit{Workflow diagram (assets/workflow.png)}}}
-}
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig02_chat_sequence.png}
+\caption{Six-step customer chat execution path combining striped virtual-thread locks, pre-call persistence, and citation gating.}
+\label{fig:workflow}
 \end{figure}
 
 % ══════════════════════════ CHAPTER 4 ══════════════════════════════════
@@ -442,6 +423,12 @@ Introduction to Islamic Finance (\textit{Madkhal}) & Training, definitions & 39 
 \end{table}
 
 \noindent The PDFs are scanned legal Arabic: visual-order lines, reversed word order, corrupted digits, broken headings --- unusable without repair. See \S\ref{sec:problems} for how this was solved.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig03_raglab_pipeline.png}
+\caption{RAGLab dual-track architecture: offline linguistic restructuring \& indexing (Track A) and online deterministic gating (Track B).}
+\end{figure}
 
 \section{Structure-Aware Chunking}
 
@@ -556,26 +543,13 @@ The web app is \textbf{the only public edge}. RAGLab is never exposed to the Int
 
 \textbf{Authentication split:} \textit{Client} vs \textit{Staff} tabs on login, role-based redirect, registration at \texttt{/register}.
 
-\textbf{Client portal \texttt{/portal}:} accounts, cards, transactions, financing simulations, advisor appointments, profile, and a ChatGPT-style assistant carrying the client's own history. Figure~\ref{fig:ui} shows the before/after of the portal redesign.
+\textbf{Client portal \texttt{/portal}:} accounts, cards, transactions, financing simulations, advisor appointments, profile, and a ChatGPT-style assistant carrying the client's own history. Figure~\ref{fig:ui} illustrates the three segregated user surfaces and their identity boundary.
 
 \begin{figure}[H]
 \centering
-\IfFileExists{assets/before-after-01-login.png}{
-  \includegraphics[width=0.96\textwidth]{assets/before-after-01-login.png}
-  \caption{Portal identity: dedicated Client vs Staff login with role-based redirect.}
-  \label{fig:ui}
-}{
-  \fbox{\parbox{0.9\textwidth}{\centering UI screenshots (assets/before-after-*.png)}}
-}
-\end{figure}
-\begin{figure}[H]
-\centering
-\IfFileExists{assets/before-after-14-chat-answers.png}{
-  \includegraphics[width=0.96\textwidth]{assets/before-after-14-chat-answers.png}
-  \caption{Chat answers: grounded responses with structured citations vs honest refusals.}
-}{
-  \fbox{\parbox{0.9\textwidth}{\centering Chat answer screenshots}}
-}
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig04_webapp_isolation.png}
+\caption{Functional architecture of Bank Assistant enforcing strict isolation across Public Channel, Client Portal, and Staff Control Room.}
+\label{fig:ui}
 \end{figure}
 
 \subsection{Core Banking Data Model (V15)}
@@ -650,8 +624,14 @@ This chapter is the heart of the internship: not what was planned, but what brok
 \textbf{Solution:} Structure-aware chunking (\S4.2). Measured gain: \textbf{+20 points hit@1} (51 $\rightarrow$ 71 live; 42 $\rightarrow$ 62 offline) --- the single largest architectural win, outranking every retrieval-mode experiment.
 \end{problembox}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig05_benchmarks.png}
+\caption{Comparative hit@1 / hit@3 / hit@5 progression across chunking, fusion, reranking, and declarative unit indexing.}
+\end{figure}
+
 \begin{problembox}{Searching in Arabic With French/English Questions}
-\textbf{Problem:} Users write technical terms in Latin script (\textit{murabaha, sukuk}) while documents use Arabic script (\textit{مرابحة, صكوك}). Lexical search has zero overlap.
+\textbf{Problem:} Users write technical terms in Latin script (\textit{murabaha, sukuk}) while documents use Arabic script (\textit{al-murabaha, al-sukuk}). Lexical search has zero overlap.
 
 \textbf{Solution (layered):} Native multilingual embeddings (NVIDIA 2048-d) handle most cross-script cases; \textbf{declared cross-script bridges} (curated Latin$\rightarrow$Arabic equivalences, df-checked so a bridge onto boilerplate can never anchor evidence); \textbf{colloquial concept vocabulary} (e.g.\ \textit{hana/khamara/bar} $\rightarrow$ \textit{khamr}, \textit{qimar/casino} $\rightarrow$ \textit{maysir}) with scope disclosure; and one bounded \textbf{interrogation call} that rewrites a practical question into the nearest technical question.
 \end{problembox}
@@ -688,6 +668,12 @@ This chapter is the heart of the internship: not what was planned, but what brok
 \chapter{Security, Privacy \& Data Governance}
 
 \section{Defense in Depth}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig06_security_layers.png}
+\caption{Seven-layer defense-in-depth \& banking PII governance architecture.}
+\end{figure}
 
 \begin{table}[H]
 \centering\small
@@ -749,10 +735,11 @@ Data & throwaway & anonymized monthly & live \\
 
 \section{Topology}
 
-\begin{center}
-\small\texttt{Internet --443(TLS,HSTS)--> Edge Proxy --80(private)--> nginx SPA --/api--> Spring Boot --> RAGLab (private)}\\
-\small\texttt{|--> Postgres (PITR: daily full + WAL, 30-day retention, quarterly drill)}
-\end{center}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,keepaspectratio]{assets/diagrams/fig07_deployment_topology.png}
+\caption{Immutable Git-SHA container promotion workflow and production runtime network/backup topology.}
+\end{figure}
 
 \noindent Postgres is managed-service where available; Flyway runs at backend boot. \texttt{docker-compose.prod.yml} (per host) sets \texttt{prod} profile, removes host port mappings, and points at secret files. Kubernetes translation is one-to-one.
 
@@ -906,25 +893,23 @@ All references are repository-internal (no external browsing needed to verify nu
 
 \begin{table}[H]
 \centering\small
-\begin{tabular}{p{4.2cm}p{3.4cm}p{6.6cm}}
+\begin{tabular}{p{4.8cm}p{9.4cm}}
 \toprule
-\textbf{Term} & \textbf{Transliteration} & \textbf{Meaning} \\
+\textbf{Term} & \textbf{Meaning} \\
 \midrule
-المرابحة & \textit{al-murabaha} & Cost-plus sale with disclosed capital and margin \\
-الإجارة & \textit{al-ijara} & Lease with acquisition option \\
-الصيغة & \textit{al-sigha} & Contractual form (offer \& acceptance) \\
-الفصل & \textit{al-fasl} & Article (law) / chapter (circular) \\
-نافذ & \textit{nafidh} & In force \\
-كافٍ & \textit{kafin} & Sufficient (evidence) \\
-غير كافٍ & \textit{ghayr kafin} & Insufficient \\
-متعارض & \textit{muta`arid} & Contradictory \\
-RAG & --- & Retrieval-Augmented Generation \\
-hit@k & --- & Expected document/fragment in top-k \\
-RRF & --- & Reciprocal Rank Fusion \\
-BM25 & --- & Lexical ranking function \\
-Citation gate & --- & Quote membership + numeric gate \\
-Sufficiency & --- & Whether evidence satisfies the proof plan \\
-Gate / Porte & --- & Feature flag with byte-identical rollback \\
+\textit{Al-Murabaha} & Cost-plus asset sale with disclosed capital and profit margin \\
+\textit{Al-Ijara} & Sharia-compliant lease contract with acquisition option \\
+\textit{Al-Sigha} & Contractual form governing valid offer and acceptance \\
+\textit{Al-Fasl} & Statutory article (law) or chapter (central bank circular) \\
+\textit{Nafidh} & Normative text active and legally in force \\
+\textit{Kafin / Ghayr Kafin} & Sufficient / Insufficient evidence verdict \\
+\textit{Muta`arid} & Contradictory evidence across retrieved sources \\
+RAG & Retrieval-Augmented Generation \\
+\texttt{hit@k} & Fraction of queries retrieving expected passage in top-$k$ \\
+RRF & Reciprocal Rank Fusion across dense and lexical arms \\
+BM25 & Classical lexical ranking function \\
+Citation gate & Verbatim quote substring + exact numeric fidelity check \\
+Sufficiency & Proof-plan verification prior to LLM answer emission \\
 \bottomrule
 \end{tabular}
 \end{table}

@@ -1,44 +1,47 @@
 # Final Internship Report — Farah AYARI
 
-**ESPRIT · Al Baraka Bank Tunisia — Centre Urbain Nord**
-Supervised by **Mrs. Ahlem Ben Haddoud** · 2025–2026
+**ESPRIT · Al Baraka Bank Tunisia — Centre Urbain Nord**  
+Supervised by **Mrs. Ahlem Ben Haddoud** · Academic Year **2025–2026**
 
-This folder is the **unified, English, 18-page** internship report that brings together the two systems built during the internship:
+This directory contains the unified, publication-grade English **Internship Report (23 pages total: Cover + 3 Front-Matter pages `i–iii` + 19 Body & Appendix pages `1–19`)** documenting the architecture, implementation, security governance, and benchmark evaluation of the integrated banking intelligence platform:
 
-- **RAGLab** — the governed RAG intelligence engine (Python/FastAPI, 339 Arabic fragments, citation-gated answers)
-- **Bank Assistant** — the bank-operated web application that consumes it (Angular 21 + Spring Boot 4 + PostgreSQL, quotas, streaming, admin console)
+- **RAGLab** — Stateless Python/FastAPI intelligence microservice indexing 4 real Arabic regulatory & operational banking texts into 339 structure-aware fragments (`+20 pp hit@1`), paired with a 198-article declarative Law 2016-48 index (`100%` rank-1 recall) and a deterministic three-stage citation gate.
+- **Bank Assistant** — Trilingual (French / Arabic / English + native RTL) Angular 21 + Spring Boot 4 (Java 21 virtual threads) + PostgreSQL 16 digital banking application owning authentication, token-family rotation, dynamic 12-permission RBAC, two-phase striped-lock quota metering, masked customer slices, and a five-tab staff governance console.
 
-It is written around **ideas, architecture and problems solved**, not a chronology, and contains no dates beyond the academic year.
+---
 
-## Contents
+## Deliverables
 
-| File | What it is | How to use it |
-|---|---|---|
-| [`Farah_Ayari_Internship_Report.pdf`](./Farah_Ayari_Internship_Report.pdf) | **The report as a beautiful PDF (18 pages)** — cover, dedications, 10 chapters, references & appendices | Open directly; print-ready (A4). Generated with `fpdf2` — no LaTeX install needed to read it. |
-| [`report.md`](./report.md) | **The same report in Markdown** — with tables, figures and image links | Render on GitHub / VS Code. Source for the PDF content. |
-| [`report.tex`](./report.tex) | **The same report in LaTeX** — compiles on Overleaf with `pdflatex` (2 passes) | Upload `report.tex` + the `assets/` folder to Overleaf. Uses only standard packages (`tikz`, `tcolorbox`, `booktabs`, `geometry`, `fancyhdr`). No Arabic fonts required (terms transliterated). |
-| `assets/` | Logos (Al Baraka, ESPRIT), architecture diagram, workflow, UI screenshots | Referenced by all three formats. |
-| `generate_pdf.py` | Python script that built the PDF (`pip install fpdf2 pillow`) | `python3 generate_pdf.py` regenerates the PDF. |
+| File | Description |
+|---|---|
+| [`Farah_Ayari_Internship_Report.pdf`](./Farah_Ayari_Internship_Report.pdf) | **Print-ready A4 PDF deliverable (23 pages)** — clean institutional cover, bilingual English/French abstracts, clickable Table of Contents & List of Figures, 10 chapters, 13 formatted tables, **7 pure-vector SVG architectural & benchmark diagrams** (zero bitmap stretching or pixelation), references, and appendices. |
+| [`report.typ`](./report.typ) | Typst typesetting manuscript powering `Farah_Ayari_Internship_Report.pdf`. |
+| [`generate_diagrams.py`](./generate_diagrams.py) | Programmatic generator producing high-DPI cleaned institutional logos and all 7 vector (`.svg`) + 300-DPI (`.png`) engineering diagrams under `assets/diagrams/`. |
+| [`generate_pdf.py`](./generate_pdf.py) | Single-command build script generating logos, diagrams, and the final PDF (`python3 final-report/generate_pdf.py`). |
+| [`report.md`](./report.md) | Complete Markdown version linked to the clean SVG diagrams in `assets/diagrams/`. |
+| [`report.tex`](./report.tex) | Overleaf-ready `pdflatex` LaTeX manuscript configured with `[width=\textwidth,keepaspectratio]` on the 300-DPI diagrams. |
+| [`fonts/`](./fonts) | Self-hosted `Inter` and `JetBrains Mono` TrueType fonts ensuring deterministic cross-platform PDF rendering. |
 
-## How it was built
+---
 
-- **Data sources:** `RAGLab/RAGLAB_FULL_REPORT.md`, `RAGLab/internship_report/INTERNSHIP_REPORT.md`, `RAGLab/RAGLAB_SPEC.md`, `bank-assistant/docs/PROJECT_REPORT.md`, `bank-assistant/PLAN_TO_PROD.md`, `bank-assistant/docs/CUSTOMER_PII_REPORT.md`, plus institutional context scraped responsibly from `albaraka.com.tn` and the Tunisian Official Journal (Law 2016-48).
-- **Cover & palette:** Al Baraka Red `#E0122F` + Orange `#F5881C` + ESPRIT Navy `#1B2A4E`, Soft Gray `#F5F7FB` — the same tokens the front-end uses, so the report and the product share an identity.
-- **Figures:** `assets/architecture_schema.png` (3000×2780) and `assets/workflow.png` (1360×1180) from the repositories, plus `assets/before-after-*.png` UI screenshots.
+## Vector Diagrams (`assets/diagrams/`)
 
-## Reproduce
+1. **`fig01_architecture`** — End-to-End Platform Architecture across Public DMZ, Bank Application Edge, and Private Intelligence Engine
+2. **`fig02_chat_sequence`** — Six-Step Customer Conversation Lifecycle (Striped Quota Gate, Pre-Persist, HTTP/1.1 Stream, Sufficiency, Citation Gate, Settle)
+3. **`fig03_raglab_pipeline`** — Dual-Track RAGLab Pipeline (Offline Arabic PDF Restructuring & Indexing + Online Deterministic Gating)
+4. **`fig04_webapp_isolation`** — Bank Assistant Segregated Surfaces & Customer-Staff Identity Boundary
+5. **`fig05_benchmarks`** — Paired Retrieval & Declarative Knowledge Benchmark Results (`hit@1 / hit@3 / hit@5`)
+6. **`fig06_security_layers`** — Seven-Layer Banking Defense-in-Depth & PII Governance Model
+7. **`fig07_deployment_topology`** — Immutable Git-SHA Promotion (`dev → staging → prod`) & Production Runtime Topology
+
+---
+
+## Reproduce Locally
 
 ```bash
-# PDF (no LaTeX needed)
-pip install fpdf2 pillow --break-system-packages  # or in a venv
-python3 final-report/generate_pdf.py  # -> final-report/Farah_Ayari_Internship_Report.pdf
-
-# LaTeX (on Overleaf or locally if texlive installed)
-# Upload final-report/report.tex + final-report/assets/ to Overleaf, compile twice with pdflatex
+pip install typst pillow numpy
+python3 final-report/generate_pdf.py
+# -> Outputs final-report/Farah_Ayari_Internship_Report.pdf
 ```
 
-## Student
-
-**Farah AYARI** — ESPRIT (Private Higher School of Engineering and Technology), Software Engineering — Internship at **Al Baraka Bank Tunisia, Centre Urbain Nord**, supervised by **Mrs. Ahlem Ben Haddoud**.
-
-*This document contains no account identifiers, repository URLs or credentials. All figures are traceable to the repositories and their frozen benchmark artifacts.*
+*Confidentiality Note: By design, no customer identifiers, repository URLs, or credentials appear anywhere in this report. All figures are traceable to frozen repository benchmark artifacts.*
