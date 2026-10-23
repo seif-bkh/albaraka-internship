@@ -1,0 +1,97 @@
+<div class="page-header">
+  <div>
+    <h2>Taxonomie & catalogue</h2>
+    <p class="subtitle">Phrases-types que le classifieur compare aux questions des clients. Les modifications ne sont actives qu'après scellement d'une version.</p>
+  </div>
+  <button class="btn-primary" *ngIf="canWrite" (click)="openCreate()">Ajouter un exemplaire</button>
+</div>
+
+<div *ngIf="errorMessage" class="alert error">{{ errorMessage }} <button (click)="load()">Réessayer</button></div>
+<div *ngIf="notice" class="alert success">{{ notice }}</div>
+
+<div class="two-col">
+  <div class="card flush">
+    <div class="toolbar">
+      <select class="form-control" [(ngModel)]="filterDomain" (change)="load()">
+        <option value="">Tous les domaines</option>
+        <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+      </select>
+      <label class="checkbox"><input type="checkbox" [(ngModel)]="showInactive"> Afficher les désactivés</label>
+      <span class="spacer"></span><span class="muted small">{{ activeCount }} actifs</span>
+    </div>
+    <div *ngIf="loading" class="loading-state"><span class="spinner"></span> Chargement…</div>
+    <div class="table-wrapper" *ngIf="!loading">
+      <table>
+        <thead><tr><th>Domaine</th><th>Intention</th><th>Texte</th><th>Langue</th><th>Sujet</th><th>État</th><th *ngIf="canWrite" class="right">Actions</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let e of visible" [class.inactive]="!e.active">
+            <td><span class="tag">{{ e.domain }}</span></td>
+            <td>{{ e.intent }}</td>
+            <td class="text-cell" [attr.dir]="e.language === 'ar' ? 'rtl' : 'ltr'">{{ e.text }}</td>
+            <td class="muted">{{ e.language }}</td>
+            <td>{{ e.topic || '—' }}</td>
+            <td><span class="badge" [ngClass]="e.active ? 'success' : 'archived'">{{ e.active ? 'actif' : 'désactivé' }}</span></td>
+            <td *ngIf="canWrite"><div class="row-actions">
+              <a (click)="openEdit(e)">Modifier</a>
+              <a (click)="toggleActive(e)" [class.danger]="e.active">{{ e.active ? 'Désactiver' : 'Réactiver' }}</a>
+            </div></td>
+          </tr>
+          <tr *ngIf="visible.length === 0"><td colspan="7" class="empty">Aucun exemplaire.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card releases">
+    <h3>Versions du catalogue</h3>
+    <p class="muted" *ngIf="publishedRelease">Version en vigueur : <strong>{{ publishedRelease.version }}</strong></p>
+    <p class="muted" *ngIf="!publishedRelease">Aucune version scellée pour l'instant.</p>
+
+    <div class="seal" *ngIf="canWrite">
+      <p class="warn" *ngIf="hasUnsealedChanges">Des modifications non scellées existent.</p>
+      <input class="form-control" [(ngModel)]="sealNote" placeholder="Note de version (optionnel)">
+      <button class="btn-primary" (click)="seal()" [disabled]="sealing || activeCount === 0">{{ sealing ? 'Scellement…' : 'Sceller une nouvelle version' }}</button>
+    </div>
+
+    <ul class="release-list">
+      <li *ngFor="let r of releases" [class.published]="r.published">
+        <div>
+          <strong>{{ r.version }}</strong>
+          <span class="badge success" *ngIf="r.published">en vigueur</span>
+          <div class="muted small">{{ r.sealedAt | date:'dd/MM/yyyy HH:mm' }} · {{ r.sealedBy }} · {{ r.exemplarCount }} exemplaires</div>
+          <div class="small" *ngIf="r.note">{{ r.note }}</div>
+        </div>
+      </li>
+      <li *ngIf="releases.length === 0" class="muted">Aucune version.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showForm" (click)="showForm = false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{ editing ? "Modifier l'exemplaire" : 'Nouvel exemplaire' }}</h3>
+    <div class="grid">
+      <label>Domaine
+        <select class="form-control" [(ngModel)]="form.domain"><option *ngFor="let d of domains" [value]="d">{{ d }}</option></select>
+      </label>
+      <label>Intention
+        <select class="form-control" [(ngModel)]="form.intent"><option *ngFor="let i of intents" [value]="i">{{ i }}</option></select>
+      </label>
+      <label>Langue
+        <select class="form-control" [(ngModel)]="form.language"><option value="fr">fr</option><option value="ar">ar</option><option value="en">en</option></select>
+      </label>
+      <label>Sujet / produit <input class="form-control" [(ngModel)]="form.topic" placeholder="ex. Mourabaha"></label>
+    </div>
+    <label>Texte (formulation telle qu'un client l'écrirait)
+      <textarea class="form-control" rows="2" [(ngModel)]="form.text" [attr.dir]="form.language === 'ar' ? 'rtl' : 'ltr'"></textarea>
+    </label>
+    <label>Champs requis <small>(séparés par des virgules, ex. client_type)</small>
+      <input class="form-control" [(ngModel)]="form.slots">
+    </label>
+    <p class="form-error" *ngIf="formError">{{ formError }}</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="showForm = false">Annuler</button>
+      <button class="btn-primary" (click)="save()" [disabled]="saving">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
+    </div>
+  </div>
+</div>

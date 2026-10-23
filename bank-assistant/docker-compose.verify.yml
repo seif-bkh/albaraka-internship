@@ -1,0 +1,78 @@
+# ============================================================
+# Al Baraka Bank Assistant — LOCAL verify harness (runs on YOUR host)
+#
+# This is NOT the app stack (see docker-compose.yml for that) and it is NOT
+# used by CI. It is a one-shot build/test environment driven by
+# `./verify-local.sh` so that day-to-day iteration never touches GitHub CI:
+#
+#   ./verify-local.sh                # run everything, then push logs
+#   ./verify-local.sh backend        # only the backend Maven build
+#   ./verify-local.sh frontend       # only the Angular production build
+#
+# postgres is started detached and LEFT RUNNING after the script exits (so
+# repeat runs are fast and you can poke at it). The one-shot
+# backend/frontend containers exit when their command finishes.
+# Clean up everything with:
+#
+#   docker compose -f docker-compose.verify.yml down
+# ============================================================
+name: banque-verify
+
+services:
+  # ---------------------------------------------------------
+  # Persistent infrastructure (left running between runs).
+  # No host ports are published: containers talk to each other by service
+  # name on their internal ports, so this never collides with the app stack.
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banque_assistant
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d banque_assistant"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  # ---------------------------------------------------------
+  # One-shot verifiers. The whole repo is bind-mounted read/write at /ws so
+  # the code you edit is exactly what gets built; only build caches live in
+  # named volumes (maven deps, npm cache).
+  #
+  # These are deliberately INCREMENTAL to make local re-runs fast:
+  #   - backend keeps its compiled classes (no `clean`): Maven recompiles
+  #     only sources that changed and re-runs the tests. The authoritative
+  #     clean build (`mvn clean verify`) still runs in CI on main merges.
+  #   - frontend uses `npm install` (not `npm ci`) so an existing node_modules
+  #     is reused and only missing/new packages are installed.
+
+  backend-verify:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /ws/backend
+    volumes:
+      - type: bind
+        source: .
+        target: /ws
+      - m2repo:/root/.m2
+    command: ["mvn", "-B", "-ntp", "verify"]
+
+  frontend-verify:
+    image: node:22
+    working_dir: /ws/frontend
+    volumes:
+      - type: bind
+        source: .
+        target: /ws
+      - npmcache:/root/.npm
+    # `npm install` instead of `npm ci`: reuses an existing node_modules and
+    # only installs missing/changed packages (npm ci wipes everything first).
+    command: ["sh", "-c", "npm install && npm run build"]
+
+volumes:
+  pgdata:
+  m2repo:
+  npmcache:

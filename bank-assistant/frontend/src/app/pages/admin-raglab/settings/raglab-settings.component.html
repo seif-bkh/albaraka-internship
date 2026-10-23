@@ -1,0 +1,477 @@
+<div class="settings-container">
+  <!-- Nav Subtabs -->
+  <div class="nav-subtabs">
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'models'"
+      (click)="setTab('models')">
+      Modèles &amp; Fournisseurs
+    </button>
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'retrieval'"
+      (click)="setTab('retrieval')">
+      Découpage &amp; Récupération
+    </button>
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'keys'"
+      (click)="setTab('keys')">
+      Clés d'API &amp; Diagnostic
+    </button>
+  </div>
+
+  <div class="readonly-notice" *ngIf="!canManage" role="status">
+    Mode consultation : réglages, clés, moteurs et opérations de console requièrent Manage. Les tests qui interrogent un modèle requièrent Run.
+  </div>
+  <fieldset class="settings-permission-fieldset" [disabled]="!canManage">
+  <!-- 1. MODELS TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'models'">
+    <!-- Warnings & Notes -->
+    <div class="alert-box warning" *ngIf="collectionChangedWarning">
+      <strong>Attention : nouvelle collection d'embeddings détectée !</strong>
+      <p>
+        Le modèle sélectionné utilise la collection <code>{{ newCollectionName }}</code>.
+        Son index est actuellement vide. Veuillez vous rendre dans l'écran <strong>Documents</strong>
+        pour lancer la construction de l'index.
+      </p>
+    </div>
+
+    <div class="alert-box info" *ngFor="let note of profileSwitchNotes">
+      <strong>Note de profil :</strong> {{ note }}
+    </div>
+
+    <div class="alert-box error" *ngIf="modelsError">
+      <strong>Erreur : {{ modelsError.reason }}</strong>
+      <p>{{ modelsError.message }}</p>
+    </div>
+
+    <div class="models-grid" *ngIf="modelsData">
+      <!-- Slot 1: Embedding Models -->
+      <div class="slot-card">
+        <div class="slot-header">
+          <div>
+            <h3>Modèle d'embedding (vectorisation)</h3>
+            <span class="slot-sub">Définit l'espace vectoriel et la collection ChromaDB</span>
+          </div>
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="isSwitchingProfile || raglab.isSealed()"
+            (click)="switchSlot('embedding')">
+            {{ isSwitchingProfile ? 'Application…' : 'Appliquer ce modèle' }}
+          </button>
+        </div>
+
+        <div class="providers-list">
+          <div class="provider-box" *ngFor="let p of modelsData.embedding; trackBy: trackProvider">
+            <div class="provider-meta">
+              <strong>{{ p.provider }}</strong>
+              <span class="prov-label">{{ p.label }}</span>
+              <span class="key-badge ok" *ngIf="p.key_set">Clé configurée ✓</span>
+              <span class="key-badge missing" *ngIf="!p.key_set" (click)="setTab('keys')">Clé requise ⚠</span>
+            </div>
+
+            <div class="models-chips">
+              <button
+                type="button"
+                class="chip-model"
+                *ngFor="let m of p.models; trackBy: trackModel"
+                [class.selected]="selectedEmbeddingProvider === p.provider && selectedEmbeddingModel === m"
+                (click)="selectModel('embedding', p.provider, m)">
+                {{ m }}
+              </button>
+            </div>
+
+            <!-- Custom typed model id -->
+            <div class="custom-model-row">
+              <input
+                type="text"
+                class="input-custom-model"
+                [(ngModel)]="customModelInput[p.provider]"
+                placeholder="ID exact (ex: nvidia/nemotron-3-embed-1b)">
+              <button
+                type="button"
+                class="btn-custom"
+                [disabled]="!customModelInput[p.provider]?.trim()"
+                (click)="applyCustomModel('embedding', p.provider)">
+                Utiliser ID
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slot 2: Answer Models -->
+      <div class="slot-card">
+        <div class="slot-header">
+          <div>
+            <h3>Modèle de réponse (génération &amp; citations)</h3>
+            <span class="slot-sub">Formule les affirmations et extrait les citations mot à mot</span>
+          </div>
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="isSwitchingProfile || raglab.isSealed()"
+            (click)="switchSlot('answer')">
+            {{ isSwitchingProfile ? 'Application…' : 'Appliquer ce modèle' }}
+          </button>
+        </div>
+
+        <div class="providers-list">
+          <div class="provider-box" *ngFor="let p of modelsData.answer; trackBy: trackProvider">
+            <div class="provider-meta">
+              <strong>{{ p.provider }}</strong>
+              <span class="prov-label">{{ p.label }}</span>
+              <span class="key-badge ok" *ngIf="p.key_set">Clé configurée ✓</span>
+              <span class="key-badge missing" *ngIf="!p.key_set" (click)="setTab('keys')">Clé requise ⚠</span>
+            </div>
+
+            <div class="models-chips">
+              <button
+                type="button"
+                class="chip-model"
+                *ngFor="let m of p.models; trackBy: trackModel"
+                [class.selected]="selectedAnswerProvider === p.provider && selectedAnswerModel === m"
+                (click)="selectModel('answer', p.provider, m)">
+                {{ m }}
+              </button>
+            </div>
+
+            <!-- Custom typed model id -->
+            <div class="custom-model-row">
+              <input
+                type="text"
+                class="input-custom-model"
+                [(ngModel)]="customModelInput[p.provider]"
+                placeholder="ID exact (ex: qwen/qwen3.8-max:free)">
+              <button
+                type="button"
+                class="btn-custom"
+                [disabled]="!customModelInput[p.provider]?.trim()"
+                (click)="applyCustomModel('answer', p.provider)">
+                Utiliser ID
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. RETRIEVAL & CORPUS TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'retrieval'">
+    <div class="settings-form-shell">
+      <div class="alert-box success" *ngIf="retrievalSaveSuccess">
+        {{ retrievalSaveSuccess }}
+      </div>
+      <div class="alert-box error" *ngIf="retrievalSaveError">
+        <strong>Erreur : {{ retrievalSaveError.reason }}</strong>
+        <p>{{ retrievalSaveError.message }}</p>
+      </div>
+
+      <!-- Chunking Section -->
+      <div class="form-section-card" *ngIf="profileForm.chunking">
+        <h4>1. Stratégie de découpage (Chunking)</h4>
+        <p class="section-desc">Contrôle la manière dont les documents du corpus sont découpés en fragments indexés.</p>
+
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" [(ngModel)]="profileForm.chunking.mode" value="restructure">
+            <div>
+              <strong>Restructuration sémantique (restructure - recommandé)</strong>
+              <span>Découpage selon la structure des titres et sections de documents.</span>
+            </div>
+          </label>
+
+          <label class="radio-label">
+            <input type="radio" [(ngModel)]="profileForm.chunking.mode" value="size">
+            <div>
+              <strong>Taille fixe en tokens (size)</strong>
+              <span>Découpage par fenêtres de tokens avec chevauchement.</span>
+            </div>
+          </label>
+
+          <label class="radio-label">
+            <input type="radio" [(ngModel)]="profileForm.chunking.mode" value="manual">
+            <div>
+              <strong>Manuel (manual)</strong>
+              <span>Découpage prédéfini par les fichiers.</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="size-options-row" *ngIf="profileForm.chunking.mode === 'size'">
+          <div class="field-item">
+            <label for="chunk-size">Taille de fragment (tokens) :</label>
+            <input id="chunk-size" type="number" min="20" max="2000" [(ngModel)]="profileForm.chunking.size" class="form-input-sm">
+          </div>
+          <div class="field-item">
+            <label for="chunk-overlap">Chevauchement (tokens) :</label>
+            <input id="chunk-overlap" type="number" min="0" max="500" [(ngModel)]="profileForm.chunking.overlap" class="form-input-sm">
+          </div>
+          <div class="inline-stale-notice">
+            ⚠ Changer la taille ou le chevauchement modifie les textes de fragments : l'index existant deviendra obsolète et devra être reconstruit.
+          </div>
+        </div>
+      </div>
+
+      <!-- Retrieval Section -->
+      <div class="form-section-card" *ngIf="profileForm.retrieval">
+        <h4>2. Paramètres de récupération (Retrieval)</h4>
+        <p class="section-desc">Ajuste la sélection des fragments pertinents pour chaque question posée.</p>
+
+        <div class="fields-grid">
+          <div class="field-item">
+            <label for="top-k">Top-K fragments retournés : <strong>{{ profileForm.retrieval.top_k }}</strong></label>
+            <input id="top-k" type="range" min="1" max="20" [(ngModel)]="profileForm.retrieval.top_k" class="slider-sm">
+          </div>
+
+          <div class="field-item">
+            <label for="ret-mode">Stratégie de récupération :</label>
+            <select id="ret-mode" [(ngModel)]="profileForm.retrieval.mode" class="form-select-sm">
+              <option value="vector">Vectoriel pur (vector)</option>
+              <option value="rrf">RRF (Reciprocal Rank Fusion)</option>
+              <option value="blend">Hybride (blend)</option>
+            </select>
+          </div>
+
+          <div class="field-item">
+            <label for="ret-lang">Filtre linguistique :</label>
+            <select id="ret-lang" [(ngModel)]="profileForm.retrieval.lang_filter" class="form-select-sm">
+              <option [ngValue]="null">Tous les documents</option>
+              <option value="fr">Français uniquement (fr)</option>
+              <option value="ar">العربية uniquement (ar)</option>
+              <option value="en">English uniquement (en)</option>
+            </select>
+          </div>
+
+          <div class="field-item">
+            <label for="ret-neighbor">Élargissement de voisinage :</label>
+            <select id="ret-neighbor" [(ngModel)]="profileForm.retrieval.neighbor_radius" class="form-select-sm">
+              <option [ngValue]="0">0 (aucun voisin)</option>
+              <option [ngValue]="1">±1 fragment contigu</option>
+              <option [ngValue]="2">±2 fragments contigus</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Corpus Directories Section -->
+      <div class="form-section-card">
+        <h4>3. Répertoires de corpus sur l'hôte (data_dirs)</h4>
+        <p class="section-desc">Chemins de répertoires absolus sur la machine où s'exécute le service RAGLab.</p>
+
+        <div class="dirs-list">
+          <div class="dir-row" *ngFor="let d of profileForm.data_dirs; let dIdx = index">
+            <code>{{ d }}</code>
+            <button type="button" class="btn-remove-dir" (click)="removeDataDir(dIdx)" title="Retirer ce dossier">✕</button>
+          </div>
+        </div>
+
+        <div class="add-dir-row">
+          <input
+            type="text"
+            class="form-input-sm flex-1"
+            [(ngModel)]="newDataDir"
+            placeholder="/app/docs ou /app/raglab/data">
+          <button type="button" class="btn-outline-sm" (click)="addDataDir()" [disabled]="!newDataDir.trim()">
+            + Ajouter répertoire
+          </button>
+        </div>
+      </div>
+
+      <div class="form-actions-bar">
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="isSavingRetrieval || raglab.isSealed()"
+          (click)="saveRetrievalSettings()">
+          {{ isSavingRetrieval ? 'Enregistrement en cours…' : 'Enregistrer le profil de récupération' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. API KEYS TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'keys'">
+    <div class="keys-shell">
+      <!-- Keys Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h4>Clés d'API du service RAGLab</h4>
+          <button type="button" class="btn-refresh" (click)="loadKeys()" title="Actualiser les clés">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M21 21v-5h-5"/>
+            </svg>
+          </button>
+        </div>
+
+        <table class="data-table" *ngIf="keysList.length > 0">
+          <thead>
+            <tr>
+              <th>Variable d'environnement</th>
+              <th>Description</th>
+              <th>Statut</th>
+              <th>Valeur masquée</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let k of keysList">
+              <td><code>{{ k.env }}</code></td>
+              <td>{{ k.description }}</td>
+              <td>
+                <span class="status-chip chip-indexed" *ngIf="k.status === 'set'">Configurée ✓</span>
+                <span class="status-chip chip-stale" *ngIf="k.status === 'missing'">Manquante ⚠</span>
+              </td>
+              <td><code>{{ k.masked || '—' }}</code></td>
+              <td class="actions-col">
+                <button
+                  type="button"
+                  class="btn-action-text danger"
+                  [disabled]="k.status === 'missing'"
+                  (click)="promptDeleteKey(k.env)">
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Set / Replace Key Form -->
+      <div class="set-key-card">
+        <h4>Configurer ou remplacer une clé</h4>
+        <div class="alert-box success" *ngIf="keySaveFeedback?.ok">{{ keySaveFeedback?.msg }}</div>
+        <div class="alert-box error" *ngIf="keySaveFeedback && !keySaveFeedback.ok">{{ keySaveFeedback.msg }}</div>
+
+        <div class="key-form-grid">
+          <div class="field-item">
+            <label for="key-env-select">Fournisseur / Variable :</label>
+            <select id="key-env-select" [(ngModel)]="selectedKeyEnv" class="form-select-sm">
+              <option *ngFor="let k of keysList" [value]="k.env">{{ k.env }} ({{ k.description }})</option>
+            </select>
+          </div>
+
+          <div class="field-item flex-1">
+            <label for="key-val-input">Valeur secrète de la clé :</label>
+            <div class="key-input-wrapper">
+              <input
+                id="key-val-input"
+                [type]="showKeyValue ? 'text' : 'password'"
+                [(ngModel)]="keyValue"
+                class="form-input-sm flex-1"
+                placeholder="Collez ici la clé d'API…">
+              <button type="button" class="btn-reveal" (click)="showKeyValue = !showKeyValue">
+                {{ showKeyValue ? 'Cacher' : 'Afficher' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="persist-checkbox">
+          <label>
+            <input type="checkbox" [(ngModel)]="keyPersist">
+            Mémoriser sur l'hôte du service (<code>persist: true</code> — écrit dans le fichier .env du service)
+          </label>
+        </div>
+
+        <div class="key-submit-row">
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="!selectedKeyEnv || !keyValue.trim() || isSavingKey"
+            (click)="onSaveKey()">
+            {{ isSavingKey ? 'Enregistrement…' : 'Enregistrer la clé' }}
+          </button>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  </fieldset>
+
+<!-- Sanity test is an execution action, not a settings mutation. -->
+<div class="sanity-card" *ngIf="activeTab === 'keys'">
+      <p class="muted small" *ngIf="!canRun">Le test interroge l’embedder : la permission RAGLab Exécuter est requise.</p>
+      <div class="sanity-header">
+        <div>
+          <h4>Test de connectivité de l'embedding (Sanity check)</h4>
+          <p class="sanity-sub">Vérifie la dimension vectorielle et calcule les similarités cosinus croisées (FR/AR/EN).</p>
+        </div>
+        <button
+          type="button"
+          class="btn-outline-sm"
+          [disabled]="!canRun || sanityLoading || raglab.isSealed()"
+          (click)="runSanityTest()">
+          <span class="spinner-xs" *ngIf="sanityLoading"></span>
+          <span>{{ sanityLoading ? 'Test en cours…' : 'Lancer le test de connectivité' }}</span>
+        </button>
+      </div>
+
+      <div class="alert-box error" *ngIf="sanityError">
+        <strong>Erreur : {{ sanityError.reason }}</strong>
+        <p>{{ sanityError.message }}</p>
+      </div>
+
+      <div class="sanity-results" *ngIf="sanityResult">
+        <div class="sanity-kpis">
+          <div class="kpi-box">
+            <span class="kpi-label">Fournisseur &amp; Modèle</span>
+            <span class="kpi-val text-sm">{{ sanityResult.provider }} · {{ sanityResult.model }}</span>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Dimension</span>
+            <span class="kpi-val">{{ sanityResult.dimension }}</span>
+          </div>
+          <div class="kpi-box">
+            <span class="kpi-label">Appels API</span>
+            <span class="kpi-val">{{ sanityResult.api_calls }}</span>
+          </div>
+        </div>
+
+        <div class="cosines-table-card">
+          <h5>Similarités cosinus cross-lingues :</h5>
+          <div class="cosines-row">
+            <div class="cosine-pill" *ngFor="let c of sanityResult.cosines">
+              <span class="pair-name">{{ c.pair }}</span>
+              <span class="pair-score" [class.score-good]="c.cosine >= 0.5">
+                {{ (c.cosine * 100).toFixed(1) }}%
+              </span>
+            </div>
+          </div>
+          <p class="interpretation-note">{{ sanityResult.interpretation }}</p>
+        </div>
+      </div>
+    </div>
+
+  <!-- Delete Key Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="deletingKeyEnv && canManage">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4>Suppression de clé d'API</h4>
+      </div>
+      <div class="modal-body">
+        <p>Confirmez-vous la suppression de la clé <code>{{ deletingKeyEnv }}</code> ?</p>
+        <div class="modal-callout">
+          Toutes les fonctionnalités dépendant de cette clé (recherche, embeddings ou réponses) cesseront immédiatement de fonctionner.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" (click)="cancelDeleteKey()" [disabled]="isDeletingKey">Annuler</button>
+        <button type="button" class="btn-danger" (click)="confirmDeleteKey()" [disabled]="isDeletingKey">
+          {{ isDeletingKey ? 'Suppression…' : 'Supprimer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

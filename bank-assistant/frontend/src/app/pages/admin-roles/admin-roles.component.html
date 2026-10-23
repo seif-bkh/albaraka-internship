@@ -1,0 +1,157 @@
+<main class="access-page" dir="auto">
+  <header class="access-header">
+    <div>
+      <span class="eyebrow">GOUVERNANCE DU PERSONNEL</span>
+      <h1>Rôles &amp; permissions</h1>
+      <p>Composez des profils à partir d’un catalogue fixe. Seul le Super Administrateur peut gérer ces droits.</p>
+    </div>
+    <button type="button" class="primary-button" (click)="beginCreate()">＋ Créer un rôle</button>
+  </header>
+
+  <div class="notice notice-info">
+    Les clés de permission sont définies par l’application : vous pouvez les combiner dans un rôle, mais pas en inventer.
+    Les droits attribués sont appliqués par l’API, même si une page ou un bouton est appelé directement.
+  </div>
+  <div class="notice notice-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</div>
+  <div class="notice notice-success" *ngIf="successMessage" role="status">{{ successMessage }}</div>
+  <div class="notice notice-hint" *ngIf="dependencyMessage">{{ dependencyMessage }}</div>
+
+  <div class="access-layout" *ngIf="!loading; else loadingState">
+    <aside class="role-rail" aria-label="Rôles du personnel">
+      <div class="rail-heading">
+        <div><strong>Rôles enregistrés</strong><span>{{ roles.length }} profil(s)</span></div>
+        <span class="rail-icon" aria-hidden="true">⌘</span>
+      </div>
+      <button
+        type="button"
+        class="role-card"
+        *ngFor="let role of roles"
+        [class.selected]="selectedRole?.id === role.id && !isCreating"
+        [class.inactive]="!role.active"
+        (click)="useRole(role)">
+        <span class="role-card-top">
+          <strong>{{ role.name }}</strong>
+          <span class="status-dot" [class.off]="!role.active" [attr.aria-label]="role.active ? 'Actif' : 'Désactivé'"></span>
+        </span>
+        <span class="role-code">{{ role.code }}</span>
+        <span class="role-card-bottom">
+          <span>{{ role.assignedUsers }} compte(s)</span>
+          <span *ngIf="role.protectedRole" class="system-tag">Protégé</span>
+          <span *ngIf="role.systemRole && !role.protectedRole" class="system-tag">Historique</span>
+          <span *ngIf="!role.systemRole" class="custom-tag">Personnalisé</span>
+        </span>
+      </button>
+      <div class="rail-empty" *ngIf="roles.length === 0">Aucun rôle disponible.</div>
+    </aside>
+
+    <section class="editor-panel" *ngIf="isCreating || selectedRole">
+      <div class="editor-titlebar">
+        <div>
+          <span class="eyebrow">{{ isCreating ? 'NOUVEAU PROFIL' : selectedRole?.code }}</span>
+          <h2>{{ isCreating ? 'Créer un rôle' : selectedRole?.name }}</h2>
+          <p *ngIf="!isCreating && selectedRole?.protectedRole" class="protected-note">Rôle système protégé — ses droits ne peuvent pas être modifiés.</p>
+          <p *ngIf="!isCreating && selectedRole?.systemRole && !selectedRole?.protectedRole" class="protected-note">Rôle historique : l’identifiant est conservé pour les écrans hors périmètre; ces réglages pilotent Documents et RAGLab.</p>
+        </div>
+        <button
+          *ngIf="!isCreating && selectedRole && !selectedRole.systemRole"
+          type="button"
+          class="quiet-button"
+          [class.danger-text]="selectedRole?.active"
+          (click)="toggleActive()">
+          {{ selectedRole?.active ? 'Désactiver' : 'Réactiver' }}
+        </button>
+      </div>
+
+      <form class="role-form" (ngSubmit)="saveRole()">
+        <div class="identity-grid">
+          <div class="field">
+            <label for="role-name">Nom du rôle</label>
+            <input id="role-name" name="name" type="text" [(ngModel)]="form.name" maxlength="120" required [disabled]="isProtected || (!isCreating && selectedRole?.active === false)">
+          </div>
+          <div class="field">
+            <label for="role-description">Description <span>facultative</span></label>
+            <input id="role-description" name="description" type="text" [(ngModel)]="form.description" maxlength="500" placeholder="Ex. Équipe documentaire en consultation" [disabled]="isProtected || (!isCreating && selectedRole?.active === false)">
+          </div>
+        </div>
+
+        <div class="permission-heading">
+          <div><h3>Accès du rôle</h3><p>Sélectionnez uniquement les actions nécessaires au poste.</p></div>
+          <span class="permission-count">{{ permissionCount }} attribution(s)</span>
+        </div>
+
+        <fieldset class="permission-group">
+          <legend><span class="group-mark documents-mark">D</span> Documents &amp; ingestion</legend>
+          <label class="permission-row" *ngFor="let permission of documentsPermissions">
+            <input
+              type="checkbox"
+              [checked]="isPermissionGranted(permission.code)"
+              [disabled]="isProtected || (!isCreating && selectedRole?.active === false)"
+              (change)="togglePermission(permission.code, $any($event.target).checked)">
+            <span class="permission-copy">
+              <strong>{{ permission.name }}</strong>
+              <span>{{ permission.description }}</span>
+            </span>
+            <code>{{ permission.code }}</code>
+          </label>
+          <p class="group-footnote">Créer, modifier, supprimer ou traiter des documents implique aussi leur consultation. L’historique reste un droit distinct.</p>
+        </fieldset>
+
+        <fieldset class="permission-group">
+          <legend><span class="group-mark raglab-mark">R</span> Console RAGLab</legend>
+          <label class="permission-row" *ngFor="let permission of raglabPermissions">
+            <input
+              type="checkbox"
+              [checked]="isPermissionGranted(permission.code)"
+              [disabled]="isPermissionDisabled(permission.code) || (!isCreating && selectedRole?.active === false)"
+              (change)="togglePermission(permission.code, $any($event.target).checked)">
+            <span class="permission-copy">
+              <strong>{{ permission.name }}</strong>
+              <span>{{ permission.description }}</span>
+              <span class="manage-warning" *ngIf="permission.code === 'RAGLAB_CONSOLE_MANAGE'">Accès à fort impact : clés, modèles, réglages, moteur, documents, index et évaluations.</span>
+              <span class="implied-note" *ngIf="permission.code === 'RAGLAB_CONSOLE_VIEW' && form.permissions.includes('RAGLAB_CONSOLE_MANAGE')">Inclus par Gérer entièrement.</span>
+              <span class="implied-note" *ngIf="permission.code === 'RAGLAB_CONSOLE_RUN' && form.permissions.includes('RAGLAB_CONSOLE_MANAGE')">Inclus par Gérer entièrement.</span>
+            </span>
+            <code>{{ permission.code }}</code>
+          </label>
+        </fieldset>
+
+        <div class="editor-footer">
+          <div class="effective-summary" *ngIf="form.permissions.includes('RAGLAB_CONSOLE_MANAGE')">
+            <strong>Ce rôle aura un accès complet à la console RAGLab.</strong>
+            <span>Voir et Exécuter sont inclus; l’accès ne comprend pas l’administration des autres rôles.</span>
+          </div>
+          <div class="role-meta" *ngIf="!isCreating && selectedRole">
+            <span>Code système : <code>{{ selectedRole?.code }}</code></span>
+            <span>{{ selectedRole?.assignedUsers }} compte(s) affecté(s)</span>
+          </div>
+          <button type="submit" class="primary-button" [disabled]="saving || isProtected || (!isCreating && selectedRole?.active === false)">
+            {{ saving ? 'Enregistrement…' : (isCreating ? 'Créer le rôle' : 'Enregistrer les droits') }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="editor-panel empty-editor" *ngIf="!isCreating && !selectedRole">
+      <div class="empty-mark">⌘</div>
+      <h2>Sélectionnez un rôle</h2>
+      <p>Consultez ses droits ou créez un nouveau profil de travail.</p>
+      <button type="button" class="primary-button" (click)="beginCreate()">Créer un rôle</button>
+    </section>
+  </div>
+
+  <ng-template #loadingState>
+    <div class="loading-state">Chargement des rôles et du catalogue de permissions…</div>
+  </ng-template>
+
+  <section class="audit-panel">
+    <div class="audit-heading"><div><span class="eyebrow">TRAÇABILITÉ</span><h2>Modifications récentes des accès</h2></div><span>50 dernières opérations</span></div>
+    <div class="audit-empty" *ngIf="audit.length === 0">Aucune modification enregistrée.</div>
+    <div class="audit-list" *ngIf="audit.length > 0">
+      <article class="audit-row" *ngFor="let entry of audit">
+        <span class="audit-event">{{ entry.action }}</span>
+        <span class="audit-detail">{{ entry.details }}</span>
+        <span class="audit-actor">{{ entry.actor }}<small>{{ entry.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></span>
+      </article>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,108 @@
+# ============================================================
+# Al Baraka Bank Assistant — full local stack
+#
+#   cp .env.docker.example .env      (then set RAGLAB_URL and JWT_SECRET)
+#   docker compose up --build
+#
+#   App:      http://localhost:8080
+#   Backend:  http://localhost:8081/actuator/health
+#
+# The assistant itself (RAGLab) is NOT in this compose file: it is an external
+# service addressed by RAGLAB_URL (http://<ip>:<port>), configured either in the
+# environment or from the console (Santé & diagnostic). Without an address, the
+# chat answers "service not configured" instead of pretending.
+# ============================================================
+
+services:
+  # ---------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: banque_pgvector
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-banque_assistant}
+    ports:
+      # Host 5433 keeps parity with the pre-Docker developer setup.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-banque_assistant}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ---------------------------------------------------------
+  backend:
+    image: ${REGISTRY:-bank-assistant}/backend:${TAG:-dev}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-unknown}
+    container_name: banque_backend
+    environment:
+      BACKEND_PORT: 8081
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-banque_assistant}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # One-off rewrite of stored customer answers through the no-provenance rule
+      # (docs/DEPLOYMENT.md §6.3). Off by default; ./deploy/update-live.sh turns it on
+      # for one boot, reads the count from the log, then turns it off again.
+      CHAT_HISTORY_BACKFILL_ENABLED: ${CHAT_HISTORY_BACKFILL_ENABLED:-false}
+      CHAT_HISTORY_BACKFILL_DRY_RUN: ${CHAT_HISTORY_BACKFILL_DRY_RUN:-true}
+      # The RAG service — the assistant itself, addressed by ip:port. Empty means
+      # not wired yet: the console says so and a chat turn refuses honestly instead
+      # of inventing an answer.
+      RAGLAB_URL: ${RAGLAB_URL:-}
+      # Shared secret the backend presents as X-Service-Token on every call to
+      # RAGLab. RAGLab requires it on every endpoint once a token is configured
+      # and answers 401 without it.
+      RAGLAB_TOKEN: ${RAGLAB_TOKEN:-albaraka-dev-service-token}
+      # Development fixture: staff + customers with banking data (off by default)
+      DEV_SEED: ${DEV_SEED:-false}
+      CUSTOMER_CONTEXT_ENABLED: ${CUSTOMER_CONTEXT_ENABLED:-true}
+      JWT_SECRET: ${JWT_SECRET:-albaraka-dev-super-secret-jwt-key-256bit-minimum-requirement-for-hs256}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      # The browser talks to nginx on :8080, so that is the only real origin.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL:-false}
+    ports:
+      - "${BACKEND_PORT:-8081}:8081"
+    # Lets the container reach a service running on the host, e.g. RAGLab while it is
+    # being wired: RAGLAB_URL=http://host.docker.internal:8000 (Docker Desktop already
+    # provides the name; host-gateway is what Linux needs). A real deployment points
+    # RAGLAB_URL at the service's own ip:port and needs nothing here.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------
+  frontend:
+    image: ${REGISTRY:-bank-assistant}/frontend:${TAG:-dev}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    container_name: banque_frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:

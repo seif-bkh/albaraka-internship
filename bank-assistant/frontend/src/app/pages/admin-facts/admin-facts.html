@@ -1,0 +1,117 @@
+<div class="page-header">
+  <div>
+    <h2>Faits gouvernés</h2>
+    <p class="subtitle">Taux, frais, conditions et contacts que l'assistant est autorisé à citer. Aucune valeur n'est codée dans un prompt.</p>
+  </div>
+  <button class="btn-primary" *ngIf="canWrite" (click)="openCreate()">Ajouter un fait</button>
+</div>
+
+<div *ngIf="!loading && errorMessage" class="alert error">
+  {{ errorMessage }}
+  <button (click)="load()">Réessayer</button>
+</div>
+
+<div class="card flush">
+  <div class="toolbar">
+    <select class="form-control" [(ngModel)]="filterDomain" (change)="load()">
+      <option value="">Tous les domaines</option>
+      <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+    </select>
+    <label class="checkbox"><input type="checkbox" [(ngModel)]="showInactive"> Afficher les faits désactivés</label>
+  </div>
+
+  <div *ngIf="loading" class="loading-state"><span class="spinner"></span> Chargement…</div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr><th>Domaine</th><th>Clé</th><th>Type</th><th>Sujet</th><th>Valeur</th><th>Source</th><th>Mis à jour</th><th>État</th><th *ngIf="canWrite" class="right">Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of visibleFacts" [class.inactive]="!f.active">
+          <td><span class="tag">{{ f.domain }}</span></td>
+          <td><code>{{ f.key }}</code></td>
+          <td class="muted">{{ f.factType }}</td>
+          <td>{{ f.topic || '—' }}</td>
+          <td class="value-cell">{{ f.value }}</td>
+          <td class="muted">
+            <a *ngIf="f.source?.startsWith('http')" [href]="f.source" target="_blank" rel="noopener">lien</a>
+            <span *ngIf="f.source && !f.source.startsWith('http')">{{ f.source }}</span>
+            <span *ngIf="!f.source">—</span>
+          </td>
+          <td class="nowrap">{{ f.updatedAt | date:'dd/MM/yyyy HH:mm' }}<span class="sub">{{ f.updatedBy }}</span></td>
+          <td><span class="badge" [ngClass]="f.active ? 'success' : 'archived'">{{ f.active ? 'actif' : 'désactivé' }}</span></td>
+          <td *ngIf="canWrite"><div class="row-actions">
+            <a (click)="openEdit(f)">Modifier</a>
+            <a (click)="openHistory(f)">Historique</a>
+            <a (click)="toggleActive(f)" [class.danger]="f.active">{{ f.active ? 'Désactiver' : 'Réactiver' }}</a>
+          </div></td>
+        </tr>
+        <tr *ngIf="visibleFacts.length === 0"><td colspan="9" class="empty">Aucun fait gouverné. L'assistant répond « information indisponible » sur ces sujets.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create / edit -->
+<div class="modal-backdrop" *ngIf="showForm" (click)="showForm = false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{ editing ? 'Modifier le fait' : 'Nouveau fait gouverné' }}</h3>
+    <div class="grid">
+      <label>Domaine
+        <select class="form-control" [(ngModel)]="form.domain" [disabled]="!!editing">
+          <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+        </select>
+      </label>
+      <label>Clé <small>(minuscules, chiffres, _)</small>
+        <input class="form-control" [(ngModel)]="form.key" [disabled]="!!editing" placeholder="ex. sayarat_profit_rate">
+      </label>
+      <label>Type
+        <select class="form-control" [(ngModel)]="form.factType">
+          <option *ngFor="let t of factTypes" [value]="t">{{ t }}</option>
+        </select>
+      </label>
+      <label>Sujet / produit <input class="form-control" [(ngModel)]="form.topic" placeholder="ex. Sayarat Al Baraka"></label>
+      <label>Langue
+        <select class="form-control" [(ngModel)]="form.language"><option value="fr">fr</option><option value="ar">ar</option><option value="en">en</option></select>
+      </label>
+      <label>Valide à partir du <input class="form-control" type="date" [(ngModel)]="form.validFrom"></label>
+    </div>
+    <label>Valeur (texte exact que l'assistant pourra citer)
+      <textarea class="form-control" rows="3" [(ngModel)]="form.value"></textarea>
+    </label>
+    <label>Source (URL de la fiche produit, référence de la grille tarifaire…)
+      <input class="form-control" [(ngModel)]="form.source">
+    </label>
+    <label>Motif <small>{{ editing ? '(obligatoire)' : '(recommandé)' }}</small>
+      <input class="form-control" [(ngModel)]="form.reason" placeholder="ex. nouvelle grille tarifaire du 01/09/2026">
+    </label>
+    <p class="form-error" *ngIf="formError">{{ formError }}</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="showForm = false">Annuler</button>
+      <button class="btn-primary" (click)="save()" [disabled]="saving">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- History -->
+<div class="modal-backdrop" *ngIf="historyFor" (click)="historyFor = null">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>Historique — <code>{{ historyFor.domain }}/{{ historyFor.key }}</code></h3>
+    <table class="history">
+      <thead><tr><th>Date</th><th>Action</th><th>Par</th><th>Ancienne valeur</th><th>Nouvelle valeur</th><th>Motif</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let h of history">
+          <td class="muted">{{ h.changedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td><span class="badge">{{ h.action }}</span></td>
+          <td>{{ h.changedBy }}</td>
+          <td class="value-cell">{{ h.oldValue || '—' }}</td>
+          <td class="value-cell">{{ h.newValue || '—' }}</td>
+          <td>{{ h.reason || '—' }}</td>
+        </tr>
+        <tr *ngIf="history.length === 0"><td colspan="6" class="empty">Aucune entrée.</td></tr>
+      </tbody>
+    </table>
+    <div class="modal-actions"><button class="btn-secondary" (click)="historyFor = null">Fermer</button></div>
+  </div>
+</div>

@@ -1,0 +1,117 @@
+server:
+  port: ${BACKEND_PORT:8081}
+
+spring:
+  application:
+    name: backend
+
+  threads:
+    # Virtual threads (JDK 21): a chat turn holds its request thread for up to
+    # 300 s while the model streams. On platform threads that caps concurrency
+    # at the Tomcat pool size; on virtual threads it is essentially free (6.3).
+    virtual:
+      enabled: ${VIRTUAL_THREADS:true}
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5433}/${POSTGRES_DB:banque_assistant}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # Flyway is the single owner of the schema; Hibernate only validates that
+      # the mapped entities exist in the schema Flyway created.
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: ${JPA_SHOW_SQL:false}
+
+  flyway:
+    enabled: true
+    # V1__baseline.sql is idempotent (IF NOT EXISTS / tolerant DO blocks), so it
+    # runs on EVERY database that has no history table yet — empty, legacy
+    # (initdb/Hibernate-created), or one where the agent already auto-created the
+    # pgvector tables before the backend's first start. Baselining at 0 is what
+    # makes Flyway accept a non-empty schema without skipping V1.
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # /actuator/prometheus is scrape-only: SecurityConfig keeps it behind
+        # authentication (SUPER_ADMIN) unless METRICS_PUBLIC=true on an
+        # internal network where the scraper cannot present a JWT.
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  observations:
+    key-values:
+      application: ${spring.application.name}
+
+logging:
+  # LOG_FORMAT=ecs switches to one-JSON-object-per-line (Elastic Common Schema),
+  # co-indexable with the agent's JSON logs; MDC keys requestId/sessionId/turnId
+  # are emitted as fields. Plain text (with the same MDC keys) is the default.
+  structured:
+    format:
+      console: ${LOG_FORMAT:}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] [req=%X{requestId:-} sess=%X{sessionId:-} turn=%X{turnId:-}] %-40.40logger{39} : %m%n%wEx"
+  level:
+    org.springframework.web: ${LOG_LEVEL_WEB:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:INFO}
+
+app:
+  chat:
+    history-backfill:
+      # One-off rewrite of stored answers through the customer rule (see
+      # CustomerAnswerBackfill). Off by default; dry-run by default when on, so the
+      # operator opts in twice: enabled=true reports, dry-run=false applies.
+      enabled: ${CHAT_HISTORY_BACKFILL_ENABLED:false}
+      dry-run: ${CHAT_HISTORY_BACKFILL_DRY_RUN:true}
+      batch-size: ${CHAT_HISTORY_BACKFILL_BATCH_SIZE:500}
+  metrics:
+    # When true /actuator/prometheus is reachable without a JWT (internal scrape).
+    public: ${METRICS_PUBLIC:false}
+  agent:
+    # RAGLab is the only engine: it answers customer chat and owns its own index.
+    # This is only the deployed default — an address set by a SUPER_ADMIN from the
+    # console is stored in agent_endpoint and wins. Production points at an
+    # address and port, e.g. http://10.20.30.40:8000. Empty = not wired yet, and
+    # the chat says so instead of pretending.
+    raglab:
+      url: ${RAGLAB_URL:}
+      # Shared secret presented as X-Service-Token on every call to the RAG
+      # service. RAGLab requires it on every endpoint once a token is configured,
+      # and answers 401 without it.
+      token: ${RAGLAB_TOKEN:albaraka-dev-service-token}
+  customer-context:
+    # When true, a signed-in customer's question travels with a masked, banded summary
+    # of their banking relationship (no amount, IBAN, card number or identity — see
+    # CustomerContextService). Switch off to send the bare question again.
+    enabled: ${CUSTOMER_CONTEXT_ENABLED:true}
+  dev-seed:
+    # Development fixture only: staff users for every role and four populated
+    # customers. Off by default; a known password in production is a breach.
+    enabled: ${DEV_SEED:false}
+  cors:
+    # Comma-separated list of allowed browser origins.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8080}
+  jwt:
+    # Pre-shared 256-bit default for zero-config dev; override via JWT_SECRET in production.
+    secret: ${JWT_SECRET:albaraka-dev-super-secret-jwt-key-256bit-minimum-requirement-for-hs256}
+    # 24h expiration in dev (3600000ms was 1h); refresh valid 7 days.
+    expirationMs: ${JWT_EXPIRATION_MS:86400000}
+    refreshExpirationMs: ${JWT_REFRESH_EXPIRATION_MS:604800000}

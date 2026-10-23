@@ -1,0 +1,117 @@
+<aside class="sidebar">
+  <div class="brand">
+    <img src="/logo.png" alt="" class="brand-mark">
+    <div class="brand-text">
+      <strong>Al Baraka Bank</strong>
+      <span>Assistant · Administration</span>
+    </div>
+  </div>
+
+  <nav class="nav-menu" aria-label="Navigation principale">
+    <ng-container *ngIf="isLegacyStaff">
+    <div class="nav-section">Pilotage</div>
+    <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      <span>Tableau de bord</span>
+    </a>
+    <a routerLink="/admin/stats" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 4 3 5-7"/></svg>
+      <span>Statistiques d'usage</span>
+    </a>
+    <a routerLink="/admin/monitoring" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6M11 8v6"/></svg>
+      <span>Monitoring du chat</span>
+    </a>
+    </ng-container>
+
+    <ng-container *ngIf="canViewRaglab">
+    <div class="nav-section">Assistant IA</div>
+    <a routerLink="/admin/raglab" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      <span>Console RAGLab</span>
+    </a>
+    <a routerLink="/admin/agent/health" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 3 12 2.5-6h6"/></svg>
+      <span>Santé &amp; diagnostic</span>
+    </a>
+    <a *ngIf="canRunRaglab" routerLink="/admin/agent/quality" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/><path d="M9 9h8M9 13h5"/></svg>
+      <span>Qualité des réponses</span>
+    </a>
+    <a routerLink="/admin/agent/journal" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/><circle cx="19" cy="19" r="2"/></svg>
+      <span>Journal</span>
+    </a>
+    </ng-container>
+
+    <div class="nav-section" *ngIf="isLegacyStaff">Connaissance</div>
+    <a *ngIf="isLegacyStaff" routerLink="/admin/facts" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M9 10v9M15 10v9M19 10v9"/><path d="M3 19h18"/></svg>
+      <span>Faits gouvernés</span>
+    </a>
+    <a *ngIf="isLegacyStaff" routerLink="/admin/news" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/></svg>
+      <span>Actualités</span>
+    </a>
+    <a *ngIf="isLegacyStaff" routerLink="/admin/taxonomy" routerLinkActive="active" class="nav-item">
+      <svg viewBox="0 0 24 24"><path d="M12 3v6M12 9L5 15M12 9l7 6"/><circle cx="12" cy="3" r="1.5"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/></svg>
+      <span>Taxonomie &amp; catalogue</span>
+    </a>
+
+    <ng-container *ngIf="isAdmin">
+      <div class="nav-section">Administration</div>
+      <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a5 5 0 0 1 6 4.5"/></svg>
+        <span>Utilisateurs &amp; rôles</span>
+      </a>
+      <a routerLink="/admin/roles" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
+        <span>Rôles &amp; permissions</span>
+      </a>
+      <a routerLink="/admin/historique" routerLinkActive="active" class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>
+        <span>Historique clients</span>
+      </a>
+    </ng-container>
+
+    <ng-container *ngIf="user && isCustomer">
+      <div class="nav-section">Mes conversations</div>
+      <button type="button" class="nav-item has-submenu" (click)="toggleHistory()">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg>
+        <span>Historique</span>
+        <svg class="chevron" [class.open]="isHistoryExpanded" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="session-list-container" *ngIf="isHistoryExpanded">
+        <button type="button" class="btn-new-session" (click)="onNewSessionClick(); $event.stopPropagation()">+ Nouvelle conversation</button>
+        <div class="session-list">
+          <button type="button" class="session-item" *ngFor="let session of sessions" (click)="onSessionClick(session.sessionId); $event.stopPropagation()">
+            <span class="session-title">{{ session.titre }}</span>
+            <span class="session-date">{{ session.dateCreation | date:'dd/MM HH:mm' }}</span>
+          </button>
+          <div class="no-sessions" *ngIf="sessions.length === 0">Aucune conversation.</div>
+        </div>
+      </div>
+    </ng-container>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a routerLink="/" class="nav-item nav-item-secondary">
+      <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+      <span>Voir le site public</span>
+    </a>
+    <a routerLink="/chat" class="nav-item nav-item-secondary">
+      <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+      <span>Ouvrir l'assistant</span>
+    </a>
+    <div class="user-info" *ngIf="user">
+      <div class="avatar">{{ (user.email || '?').charAt(0).toUpperCase() }}</div>
+      <div class="user-details">
+        <strong [title]="user.email">{{ user.email }}</strong>
+        <span>{{ userRoleLabel }}</span>
+      </div>
+      <button type="button" class="btn-logout" (click)="logout()" title="Déconnexion" aria-label="Déconnexion">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </div>
+</aside>

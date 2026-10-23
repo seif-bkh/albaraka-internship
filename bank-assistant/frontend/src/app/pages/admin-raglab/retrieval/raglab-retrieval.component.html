@@ -1,0 +1,331 @@
+<div class="retrieval-container">
+  <!-- Nav Subtabs -->
+  <div class="nav-subtabs">
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'search'"
+      (click)="setTab('search')">
+      Recherche de fragments
+    </button>
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'corpus'"
+      (click)="setTab('corpus')">
+      Inspection du corpus &amp; Tailles
+    </button>
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'quote'"
+      (click)="setTab('quote')">
+      Vérification de citation (Quote check)
+    </button>
+  </div>
+
+  <!-- 1. SEARCH TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'search'">
+    <div class="readonly-search-notice" *ngIf="!canRun" role="status">
+      Mode consultation : l’exécution d’une recherche consomme des ressources et requiert la permission RAGLab Exécuter.
+    </div>
+    <div class="search-form-card" *ngIf="canRun">
+      <div class="search-input-row">
+        <input
+          type="text"
+          class="form-input-lg"
+          [(ngModel)]="question"
+          (keydown.enter)="onSearch()"
+          dir="auto"
+          placeholder="Entrez une question pour sonder la récupération pure (sans modèle de chat)…">
+        <button
+          type="button"
+          class="btn-search"
+          [disabled]="!question.trim() || searchLoading || raglab.isSealed()"
+          (click)="onSearch()">
+          <span class="spinner-xs" *ngIf="searchLoading"></span>
+          <span>{{ searchLoading ? 'Recherche…' : 'Rechercher' }}</span>
+        </button>
+      </div>
+
+      <div class="search-knobs">
+        <div class="knob-item">
+          <label for="k-input">Top-K : <strong>{{ k }}</strong></label>
+          <input id="k-input" type="range" min="1" max="20" [(ngModel)]="k" class="slider-sm">
+        </div>
+
+        <div class="knob-item">
+          <label for="mode-select">Mode :</label>
+          <select id="mode-select" [(ngModel)]="mode" class="form-select-sm">
+            <option value="vector">Vectoriel pur (vector)</option>
+            <option value="rrf">RRF</option>
+            <option value="blend">Hybride (blend)</option>
+          </select>
+        </div>
+
+        <div class="knob-item">
+          <label for="lang-filter">Filtre langue :</label>
+          <select id="lang-filter" [(ngModel)]="langFilter" class="form-select-sm">
+            <option value="">Aucun filtre</option>
+            <option value="fr">Français (fr)</option>
+            <option value="ar">العربية (ar)</option>
+            <option value="en">English (en)</option>
+          </select>
+        </div>
+
+        <div class="knob-item">
+          <label for="radius-select">Rayon voisins :</label>
+          <select id="radius-select" [(ngModel)]="neighborRadius" class="form-select-sm">
+            <option [ngValue]="0">0 (aucun)</option>
+            <option [ngValue]="1">±1 fragment</option>
+            <option [ngValue]="2">±2 fragments</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Error -->
+    <div class="alert-box error" *ngIf="searchError">
+      <strong>Erreur : {{ searchError.reason }}</strong>
+      <p>{{ searchError.message }}</p>
+    </div>
+
+    <!-- Search Hits Result -->
+    <div class="hits-results" *ngIf="searchResult">
+      <div class="hits-header">
+        <h4>{{ searchResult.hits.length }} fragment(s) récupéré(s)</h4>
+        <div class="hits-meta">
+          <span class="meta-tag">Langue détectée : <strong>{{ searchResult.language }}</strong></span>
+          <span class="meta-tag">Mode : <strong>{{ searchResult.mode }}</strong></span>
+          <span class="meta-tag" *ngIf="searchResult.embedder">Embedder : <strong>{{ searchResult.embedder.model }}</strong></span>
+        </div>
+      </div>
+
+      <div class="hits-list">
+        <div class="hit-card" *ngFor="let hit of searchResult.hits; trackBy: trackHit">
+          <div class="hit-top-row">
+            <span class="hit-rank">#{{ hit.rank }}</span>
+            <div class="hit-score-badge" [title]="'Score de similarité: ' + hit.similarity">
+              Score : <strong>{{ (hit.similarity * 100).toFixed(1) }}%</strong>
+            </div>
+            <span class="hit-doc"><strong>{{ hit.source }}</strong></span>
+            <span class="hit-heading" *ngIf="hit.heading">{{ hit.heading }}</span>
+            <span class="hit-lang-badge">{{ hit.language | uppercase }}</span>
+            <span class="hit-id"><code>{{ hit.id }}</code></span>
+          </div>
+          <div class="hit-text" dir="auto" [innerHTML]="hit.text | piiFormat"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. CORPUS TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'corpus'">
+    <div class="corpus-toolbar">
+      <div class="limit-selector">
+        <label for="inspect-limit">Échantillon à inspecter :</label>
+        <select id="inspect-limit" [(ngModel)]="inspectLimit" (change)="loadInspect()" class="form-select-sm">
+          <option [ngValue]="5">5 fragments</option>
+          <option [ngValue]="10">10 fragments</option>
+          <option [ngValue]="25">25 fragments</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn-outline-sm" (click)="loadInspect()" [disabled]="inspectLoading">
+        <span class="spinner-xs" *ngIf="inspectLoading"></span>
+        <span>Rafraîchir l'inspection</span>
+      </button>
+    </div>
+
+    <div class="alert-box error" *ngIf="inspectError">
+      <strong>Erreur : {{ inspectError.reason }}</strong>
+      <p>{{ inspectError.message }}</p>
+    </div>
+
+    <div class="corpus-dashboard" *ngIf="inspectResult">
+      <!-- KPI Stats Strip -->
+      <div class="kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-label">Documents corpus</span>
+          <span class="kpi-val">{{ inspectResult.documents.length }}</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Nombre total de fragments</span>
+          <span class="kpi-val">{{ inspectResult.chunks.count }}</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Tokens (médiane)</span>
+          <span class="kpi-val">{{ inspectResult.chunks.tokens_median }}</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Tokens (min / max)</span>
+          <span class="kpi-val">{{ inspectResult.chunks.tokens_min }} / {{ inspectResult.chunks.tokens_max }}</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Mode de découpage</span>
+          <span class="kpi-val mode-val">{{ inspectResult.chunking.mode }}</span>
+        </div>
+      </div>
+
+      <!-- Histogram of Chunk Sizes -->
+      <div class="chart-card" *ngIf="inspectResult.chunks.histogram && inspectResult.chunks.histogram.length > 0">
+        <h4>Distribution des tailles de fragments (Tokens)</h4>
+        <div class="histogram-bars">
+          <div class="histogram-col" *ngFor="let b of inspectResult.chunks.histogram; trackBy: trackIndex">
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                [style.height.%]="(b.chunks / maxHistogramBucket(inspectResult.chunks.histogram)) * 100"
+                [title]="b.chunks + ' fragments dans l\'intervalle ' + b.bucket">
+              </div>
+            </div>
+            <span class="bar-count">{{ b.chunks }}</span>
+            <span class="bar-label">{{ b.bucket }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents in corpus table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h4>Fichiers analysés dans le corpus</h4>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nom du fichier</th>
+              <th>Langue</th>
+              <th>Caractères</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let doc of inspectResult.documents; trackBy: trackRow">
+              <td><strong>{{ doc.name }}</strong></td>
+              <td><span class="badge-lang">{{ doc.language | uppercase }}</span></td>
+              <td class="num">{{ doc.chars }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sample Chunks Preview -->
+      <div class="samples-card" *ngIf="inspectResult.sample && inspectResult.sample.length > 0">
+        <h4>Échantillon de fragments (premiers {{ inspectResult.sample.length }})</h4>
+        <div class="sample-list">
+          <div class="sample-item" *ngFor="let s of inspectResult.sample; trackBy: trackIndex">
+            <div class="sample-meta">
+              <span class="sample-idx">#{{ s.index }}</span>
+              <strong class="sample-src">{{ s.source }}</strong>
+              <span class="sample-heading" *ngIf="s.heading">{{ s.heading }}</span>
+              <span class="sample-tokens">{{ s.tokens }} tokens</span>
+            </div>
+            <pre class="sample-text" dir="auto">{{ s.text }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. QUOTE CHECK TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'quote'">
+    <div class="quote-check-card" *ngIf="canView">
+      <h4>Vérifier si un extrait existe dans un fragment unique</h4>
+      <p class="quote-hint">
+        Cet outil gratuit et en lecture seule teste si un passage exact est entièrement contenu à l'intérieur d'un seul fragment
+        ou s'il chevauche deux fragments. Si une citation mot à mot chevauche une frontière, le filtre de validation
+        la rejettera systématiquement comme non sourcée.
+      </p>
+
+      <textarea
+        class="quote-textarea"
+        rows="4"
+        dir="auto"
+        [(ngModel)]="quoteInput"
+        placeholder="Collez ici l'extrait ou la citation à vérifier…"></textarea>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="!quoteInput.trim() || quoteLoading"
+        (click)="onQuoteCheck()">
+        <span class="spinner-xs" *ngIf="quoteLoading"></span>
+        <span>{{ quoteLoading ? 'Vérification en cours…' : 'Vérifier la citation' }}</span>
+      </button>
+    </div>
+
+    <!-- Error -->
+    <div class="alert-box error" *ngIf="quoteError">
+      <strong>Erreur : {{ quoteError.reason }}</strong>
+      <p>{{ quoteError.message }}</p>
+    </div>
+
+    <!-- Verdict Result -->
+    <div class="verdict-container" *ngIf="quoteResult">
+      <!-- A. FULL MATCH -->
+      <div class="verdict-card success" *ngIf="quoteResult.full && quoteResult.full.length > 0">
+        <div class="verdict-header">
+          <span class="verdict-icon">✓</span>
+          <div class="verdict-title-area">
+            <strong>À l'intérieur d'un seul fragment</strong>
+            <p>Ce passage est contenu intégralement dans un fragment unique. Une citation mot à mot peut être validée avec succès par le filtre.</p>
+          </div>
+        </div>
+
+        <div class="matches-list">
+          <div class="match-item" *ngFor="let m of quoteResult.full; trackBy: trackIndex">
+            <span class="match-doc">{{ m.source }}</span>
+            <span class="match-heading" *ngIf="m.heading">({{ m.heading }})</span>
+            <span class="match-chunk">Fragment n°{{ m.chunk_index }}</span>
+          </div>
+        </div>
+
+        <div class="first-full" *ngIf="quoteResult.first_full_text">
+          <span class="full-title">Texte complet du fragment contenant la citation :</span>
+          <pre class="full-text" dir="auto">{{ quoteResult.first_full_text }}</pre>
+        </div>
+      </div>
+
+      <!-- B. BOUNDARY CROSSING (HEAD/TAIL MATCH WITHOUT FULL) -->
+      <div class="verdict-card warning" *ngIf="(!quoteResult.full || quoteResult.full.length === 0) && ((quoteResult.head && quoteResult.head.length > 0) || (quoteResult.tail && quoteResult.tail.length > 0))">
+        <div class="verdict-header">
+          <span class="verdict-icon">⚠</span>
+          <div class="verdict-title-area">
+            <strong>Chevauche une frontière de fragments</strong>
+            <p>
+              Ce passage commence dans un fragment et se termine dans un autre.
+              <strong>Aucune citation fidèle de ce passage ne pourra jamais franchir le filtre de validation.</strong>
+              Le problème vient du découpage des fragments, pas du modèle de chat.
+            </p>
+          </div>
+        </div>
+
+        <div class="boundary-details">
+          <div class="boundary-half" *ngIf="quoteResult.head && quoteResult.head.length > 0">
+            <strong>Début du texte (tête) trouvé dans :</strong>
+            <div class="match-item" *ngFor="let h of quoteResult.head; trackBy: trackIndex">
+              {{ h.source }} — fragment n°{{ h.chunk_index }} ({{ h.heading }})
+            </div>
+          </div>
+
+          <div class="boundary-half" *ngIf="quoteResult.tail && quoteResult.tail.length > 0">
+            <strong>Fin du texte (queue) trouvée dans :</strong>
+            <div class="match-item" *ngFor="let t of quoteResult.tail; trackBy: trackIndex">
+              {{ t.source }} — fragment n°{{ t.chunk_index }} ({{ t.heading }})
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. NOT FOUND AT ALL -->
+      <div class="verdict-card neutral" *ngIf="(!quoteResult.full || quoteResult.full.length === 0) && (!quoteResult.head || quoteResult.head.length === 0) && (!quoteResult.tail || quoteResult.tail.length === 0)">
+        <div class="verdict-header">
+          <span class="verdict-icon">✕</span>
+          <div class="verdict-title-area">
+            <strong>Introuvable dans le corpus</strong>
+            <p>Aucune portion de ce texte n'a été retrouvée dans les fragments actuellement indexés.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

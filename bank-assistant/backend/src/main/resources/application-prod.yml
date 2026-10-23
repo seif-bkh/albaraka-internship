@@ -1,0 +1,28 @@
+# Production profile (SPRING_PROFILES_ACTIVE=prod). Only tightens; every value
+# here can be overridden by env. See docs/DEPLOYMENT.md.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    # A production database is always migrated by Flyway from an empty schema
+    # or from a baselined V1; never let Hibernate touch DDL.
+    enabled: true
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:ecs}
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN

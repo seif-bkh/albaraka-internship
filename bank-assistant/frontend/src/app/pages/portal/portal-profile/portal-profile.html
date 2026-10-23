@@ -1,0 +1,72 @@
+<div class="profile-page" [attr.dir]="dir">
+  <div class="profile-wrap">
+    <div class="page-head">
+      <div>
+        <h1>{{ 'portal.profile.title' | translate }}</h1>
+        <p>{{ 'portal.profile.lead' | translate }}</p>
+      </div>
+      <button type="button" class="btn-edit" *ngIf="!editing" (click)="startEdit()">{{ 'portal.profile.edit' | translate }}</button>
+    </div>
+
+    <div class="alert ok" *ngIf="saved">{{ 'portal.profile.saved' | translate }}</div>
+    <div class="alert ko" *ngIf="error === 'save'">{{ 'portal.profile.error' | translate }}</div>
+
+    <div class="profile-grid" *ngIf="profile">
+      <!-- Identité (lecture seule) -->
+      <section class="card">
+        <h2>{{ 'portal.profile.title' | translate }}</h2>
+        <div class="avatar-block">
+          <span class="avatar">{{ (profile.prenom?.[0] || '') + (profile.nom?.[0] || '') }}</span>
+          <div>
+            <strong>{{ profile.prenom }} {{ profile.nom }}</strong>
+            <span class="seg-chip" *ngIf="profile.segment">{{ 'portal.segment.' + profile.segment | translate }}</span>
+          </div>
+        </div>
+        <dl class="facts">
+          <div><dt>{{ 'portal.profile.email' | translate }}</dt><dd>{{ profile.email }}</dd></div>
+          <div><dt>{{ 'portal.profile.ref' | translate }}</dt><dd class="mono">{{ profile.referenceClient }}</dd></div>
+          <div *ngIf="profile.dateCreation"><dt>{{ 'portal.profile.since' | translate }}</dt><dd>{{ profile.dateCreation | date:'dd/MM/yyyy' }}</dd></div>
+          <div *ngIf="profile.dateNaissance"><dt>{{ 'portal.profile.birthdate' | translate }}</dt><dd>{{ profile.dateNaissance | date:'dd/MM/yyyy' }}</dd></div>
+        </dl>
+      </section>
+
+      <!-- Coordonnées éditables -->
+      <section class="card">
+        <h2>{{ 'portal.profile.lead' | translate }}</h2>
+        <form (ngSubmit)="save()" #f="ngForm">
+          <div class="field">
+            <label for="phone">{{ 'portal.profile.phone' | translate }}</label>
+            <input id="phone" name="telephone" type="tel" [(ngModel)]="form.telephone" [disabled]="!editing"
+                   placeholder="+216 .. ... ..." />
+          </div>
+          <div class="field">
+            <label for="address">{{ 'portal.profile.address' | translate }}</label>
+            <input id="address" name="adresse" type="text" [(ngModel)]="form.adresse" [disabled]="!editing" />
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="city">{{ 'portal.profile.city' | translate }}</label>
+              <input id="city" name="ville" type="text" [(ngModel)]="form.ville" [disabled]="!editing" />
+            </div>
+            <div class="field">
+              <label for="lang">{{ 'portal.profile.language' | translate }}</label>
+              <select id="lang" name="languePreferee" [(ngModel)]="form.languePreferee" [disabled]="!editing">
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions" *ngIf="editing">
+            <button type="button" class="btn-secondary" (click)="cancelEdit()">{{ 'portal.profile.cancel' | translate }}</button>
+            <button type="submit" class="btn-primary" [disabled]="saving">
+              <span class="spinner" *ngIf="saving"></span>
+              {{ saving ? ('portal.profile.saving' | translate) : ('portal.profile.save' | translate) }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>

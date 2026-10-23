@@ -1,0 +1,212 @@
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- VUE LISTE                                                   -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="viewMode === 'list'">
+
+  <div class="page-header">
+    <div>
+      <h2>Historique clients</h2>
+      <p class="subtitle">{{ totalConversations }} conversation(s) enregistrée(s)</p>
+    </div>
+    <button type="button" class="live-toggle" [class.on]="autoRefresh" (click)="toggleAutoRefresh()"
+            [attr.aria-pressed]="autoRefresh"
+            [title]="'Recharge le fil toutes les ' + (livePollMs / 1000) + ' secondes'">
+      <span class="live-dot"></span>
+      {{ autoRefresh ? ('direct · ' + (livePollMs / 1000) + ' s') : 'direct en pause' }}
+    </button>
+  </div>
+
+  <!-- Filtres -->
+  <div class="card filters-card">
+    <div class="toolbar filters-row">
+      <div class="filter-group">
+        <label>Langue</label>
+        <select class="form-control" [(ngModel)]="filtreLangue" (change)="applyFilters()">
+          <option value="">Toutes les langues</option>
+          <option value="fr">Français</option>
+          <option value="ar">Arabe</option>
+          <option value="en">Anglais</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Depuis</label>
+        <input class="form-control" type="date" [(ngModel)]="filtreDebut" (change)="applyFilters()">
+      </div>
+      <div class="filter-group">
+        <label>Jusqu'au</label>
+        <input class="form-control" type="date" [(ngModel)]="filtreFin" (change)="applyFilters()">
+      </div>
+      <button class="btn-secondary" (click)="resetFilters()">Réinitialiser</button>
+    </div>
+  </div>
+
+  
+
+  <!-- Erreur -->
+  <div *ngIf="listError && !loadingList" class="alert error">
+    {{ listError }}
+    <button (click)="loadConversations()">Réessayer</button>
+  </div>
+
+  <!-- Tableau -->
+  <div class="card flush" *ngIf="!loadingList">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Langue</th>
+            <th>Messages</th>
+            <th>Début</th>
+            <th>Durée</th>
+            <th>Localisation</th>
+            <th class="right"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let conv of conversations" class="clickable-row">
+            <td class="mono muted">{{ conv.sessionIdTronque }}</td>
+            <td>
+              <span class="badge plain outline">{{ conv.langue | uppercase }}</span>
+            </td>
+            <td>
+              {{ conv.nombreMessages }}
+            </td>
+            <td class="nowrap">{{ conv.dateDebut | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="muted">{{ getDureeSession(conv.dateDebut, conv.dateFin) }}</td>
+            <td class="muted">{{ conv.localisation || '—' }}</td>
+            <td>
+              <div class="row-actions"><a (click)="openDetail(conv)" class="primary">Ouvrir</a></div>
+            </td>
+          </tr>
+          <tr *ngIf="conversations.length === 0">
+            <td colspan="7" class="empty-state">
+              <strong>Aucune conversation enregistrée</strong>
+              Les conversations apparaîtront ici après les premiers échanges avec l'assistant.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalConversations > pageSize">
+      <button class="btn-secondary btn-sm" (click)="prevPage()" [disabled]="currentPage === 0">Précédent</button>
+      <span>Page {{ currentPage + 1 }} / {{ Math.ceil(totalConversations / pageSize) }}</span>
+      <button class="btn-secondary btn-sm" (click)="nextPage()" [disabled]="(currentPage + 1) * pageSize >= totalConversations">Suivant</button>
+    </div>
+  </div>
+
+  <div *ngIf="loadingList" class="loading-state"><span class="spinner"></span> Chargement des conversations…</div>
+
+</ng-container>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- VUE DÉTAIL — Fil de conversation                            -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<ng-container *ngIf="viewMode === 'detail'">
+
+  <div class="page-header detail-header">
+    <button class="btn-ghost btn-sm btn-back" (click)="backToList()">← Retour à la liste</button>
+    <div *ngIf="selectedConversation">
+      <!-- L'admin, lui, a l'identifiant de session complet : c'est la clé qui
+           relie un échange au cache, à l'agent et à un signalement client. -->
+      <h2>Conversation <code class="session-chip">{{ selectedConversation.sessionId }}</code></h2>
+      <p class="subtitle">
+        <span class="badge plain outline">{{ selectedConversation.langue | uppercase }}</span>
+        &nbsp;·&nbsp;
+        {{ selectedConversation.dateDebut | date:'dd/MM/yyyy' }}
+        &nbsp;·&nbsp;
+        {{ selectedConversation.messages.length }} message(s)
+        &nbsp;·&nbsp;
+        <span class="badge plain warning" *ngIf="hasInProgress()">échange en cours</span>
+        <span class="client-tag" *ngIf="selectedConversation.clientId">client #{{ selectedConversation.clientId }}</span>
+        &nbsp;·&nbsp;
+        <span class="ip-tag">IP : {{ selectedConversation.adresseIp }}</span>
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="loadingDetail" class="loading-state"><span class="spinner"></span> Chargement du fil de conversation…</div>
+
+  <div *ngIf="detailError && !loadingDetail" class="alert error">{{ detailError }}</div>
+
+  <div class="chat-container" *ngIf="!loadingDetail && selectedConversation">
+
+    <div *ngIf="selectedConversation.messages.length === 0" class="empty-state">Aucun message dans cette conversation</div>
+
+    <!-- Fil de messages -->
+    <div class="chat-thread" *ngFor="let msg of selectedConversation.messages; trackBy: trackByMessage">
+
+      <!-- Question client -->
+      <div class="message-block client-block">
+        <div class="message-avatar client-avatar">C</div>
+        <div class="message-content client-message">
+          <div class="message-text">{{ msg.question }}</div>
+          <div class="message-meta">
+            <span *ngIf="msg.questionReformulee && msg.questionReformulee !== msg.question"
+                  class="reformulation-hint" title="Question reformulée">
+              Reformulée : « {{ msg.questionReformulee }} »
+            </span>
+            <span class="msg-time">{{ msg.dateCreation | date:'HH:mm:ss' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Réponse assistant -->
+      <div class="message-block assistant-block">
+        <div class="message-avatar assistant-avatar"><img src="/logo.png" alt=""></div>
+        <div class="message-content assistant-message">
+          <div class="intention-badge" [ngClass]="'intention-' + msg.intention">
+            {{ getIntentionLabel(msg.intention) }}
+          </div>
+          <div class="message-text">{{ msg.reponse }}</div>
+
+          <!-- Ce que l'assistant a lu : jamais visible pour l'utilisateur. -->
+          <div class="sources-section" *ngIf="msg.documents?.length || msg.sourcesUtilisees?.length">
+            <span class="sources-label">Documents consultés</span>
+            <ng-container *ngIf="msg.documents?.length; else sourceTags">
+              <span class="doc-tag" *ngFor="let d of msg.documents"
+                    [title]="(d.document || d.title || '') + (d.heading ? ' — ' + d.heading : '')"
+                    [class.dropped]="d.kept === false" [class.cited]="d.cited">
+                {{ d.document || d.title }}
+                <em *ngIf="d.heading"> › {{ d.heading }}</em>
+                <small *ngIf="d.chunkId">{{ d.chunkId }}</small>
+                <small *ngIf="d.similarity !== null && d.similarity !== undefined">{{ scoreOf(d.similarity) }}</small>
+              </span>
+            </ng-container>
+            <ng-template #sourceTags>
+              <span class="source-tag" *ngFor="let src of msg.sourcesUtilisees">{{ src }}</span>
+            </ng-template>
+          </div>
+          <div class="no-rag-badge" *ngIf="!msg.ragUtilise">
+            <span>Réponse directe (sans recherche documentaire)</span>
+          </div>
+
+          <!-- Observabilité de l'échange : ce que le client ne voit pas. -->
+          <div class="exchange-meta" *ngIf="msg.observability as o">
+            <span class="meta-item"><strong>#{{ msg.id }}</strong></span>
+            <span class="meta-item" *ngIf="o.userId">user {{ o.userId }}</span>
+            <span class="meta-item" *ngIf="o.model">{{ o.model }}</span>
+            <span class="meta-item" *ngIf="o.langue">langue {{ o.langue }}</span>
+            <span class="meta-item" *ngIf="o.tokensIn !== null || o.tokensOut !== null">
+              tokens {{ o.tokensIn ?? 0 }} in / {{ o.tokensOut ?? 0 }} out
+            </span>
+            <span class="meta-item">latence {{ latencyOf(msg) }}</span>
+            <span class="meta-item" [title]="o.askedAt">demandé {{ o.askedAt | date:'HH:mm:ss' }}</span>
+            <span class="meta-item" [title]="o.answeredAt" *ngIf="o.answeredAt">
+              répondu {{ o.answeredAt | date:'HH:mm:ss' }}
+            </span>
+            <span class="meta-item status" [class.in-progress]="o.status === 'IN_PROGRESS'"
+                  [class.failed]="o.status === 'FAILED'" [class.refused]="o.status === 'REFUSED'">
+              {{ o.status || 'ANSWERED' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</ng-container>

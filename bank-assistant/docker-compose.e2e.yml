@@ -1,0 +1,71 @@
+# End-to-end stack (7.3): real postgres, backend and frontend, exercised through
+# nginx exactly as a browser would.
+#
+# The assistant is RAGLab, an external service this file does not build. Point the
+# backend at a reachable one; the chat checks in e2e/run.sh need a corpus that
+# answers "Mourabaha".
+#
+#   RAGLAB_URL=http://10.20.30.40:8000 RAGLAB_TOKEN=... \
+#     docker compose -f docker-compose.e2e.yml up --build -d --wait
+#   ./e2e/run.sh
+#   docker compose -f docker-compose.e2e.yml down -v
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banque_assistant
+    # No initdb mount: an empty database lets Flyway V1..Vn create the whole
+    # schema (initdb would pre-create two tables and make Flyway baseline).
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d banque_assistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      BACKEND_PORT: 8081
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: banque_assistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      JWT_SECRET: ZTJlLW9ubHktc2VjcmV0LWtleS13aGljaC1pcy1sb25nLWVub3VnaC1mb3ItaHMyNTYtMjU2Yml0cw==
+      RAGLAB_URL: ${RAGLAB_URL:-}
+      RAGLAB_TOKEN: ${RAGLAB_TOKEN:-e2e-service-token}
+      # Development fixture: staff, demo accounts and customers with banking data.
+      # These two files are test stacks, so it is on; docker-compose.yml keeps it off.
+      DEV_SEED: ${DEV_SEED:-true}
+      CUSTOMER_CONTEXT_ENABLED: ${CUSTOMER_CONTEXT_ENABLED:-true}
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
+      JPA_DDL_AUTO: validate
+      LOG_FORMAT: ecs
+      METRICS_PUBLIC: "true"
+    # A RAGLab running on this machine is reachable as host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20

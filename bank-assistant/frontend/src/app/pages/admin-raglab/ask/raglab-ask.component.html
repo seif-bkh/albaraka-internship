@@ -1,0 +1,279 @@
+<div class="ask-container">
+  <!-- Conversation History -->
+  <div class="chat-flow" *ngIf="turns.length > 0">
+    <div class="flow-header">
+      <div class="flow-title-wrap">
+        <span class="flow-dot"></span>
+        <span class="flow-title">Session RAGLab — {{ turns.length }} échange{{ turns.length > 1 ? 's' : '' }}</span>
+      </div>
+      <button type="button" class="btn-clear" (click)="clearChat()">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+        <span>Nouvelle conversation</span>
+      </button>
+    </div>
+
+    <div class="turn-card" *ngFor="let turn of turns; trackBy: trackTurn" [id]="turn.id">
+      <!-- Question by User -->
+      <div class="user-bubble">
+        <div class="bubble-meta">
+          <div class="user-role-badge">
+            <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Question</span>
+          </div>
+          <span class="bubble-time">{{ turn.timestamp | date:'HH:mm:ss' }}</span>
+        </div>
+        <div class="question-text" dir="auto">{{ turn.question }}</div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="assistant-bubble loading-bubble" *ngIf="turn.loading">
+        <div class="loader-card">
+          <div class="loader-spinner"></div>
+          <div class="loader-content">
+            <div class="loader-step">{{ turn.loadingStep }}</div>
+            <div class="loader-subcopy">Le filtre de citation vérifie chaque affirmation mot à mot avant restitution.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="assistant-bubble error-bubble" *ngIf="turn.error">
+        <div class="error-header">
+          <span class="error-badge">Erreur {{ turn.error.reason }}</span>
+        </div>
+        <p class="error-msg">{{ turn.error.message }}</p>
+        <p class="error-hint" *ngIf="turn.error.hint">{{ turn.error.hint }}</p>
+      </div>
+
+      <!-- Response Payload -->
+      <div class="assistant-bubble response-bubble" *ngIf="turn.response">
+        <!-- Metadata Pill Bar -->
+        <div class="meta-strip">
+          <span class="meta-badge model-badge" *ngIf="turn.response.model">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            {{ turn.response.model }}
+          </span>
+          <span class="meta-badge lang-badge" *ngIf="turn.response.language">{{ turn.response.language | uppercase }}</span>
+          <span class="meta-badge cache-badge" *ngIf="turn.response.cached">✓ Cache</span>
+          <span class="meta-badge no-ai-badge" *ngIf="turn.response.inference_performed === false">Sans appel IA</span>
+          <span class="meta-badge latency-badge" *ngIf="turn.response.seconds">
+            ⚡ {{ turn.response.seconds | number:'1.1-2' }}s
+          </span>
+        </div>
+
+        <!-- 1. GREETING -->
+        <div class="greeting-box" *ngIf="turn.response.status === 'greeting'">
+          <div class="prose-content" dir="auto" [innerHTML]="turn.response.answer | piiFormat"></div>
+        </div>
+
+        <!-- 2. REFUSED -->
+        <div class="refused-box" *ngIf="turn.response.status === 'refused'">
+          <div class="refused-header">
+            <span class="refused-pill">Réponse sécurisée</span>
+            <span class="refused-reason">{{ reasonLabel(turn.response.reason) }}</span>
+          </div>
+          <div class="refused-text" dir="auto" [innerHTML]="turn.response.answer | piiFormat"></div>
+
+          <!-- Raw preview collapsible if output was rejected by gate -->
+          <div class="raw-preview-wrapper" *ngIf="turn.response.raw_preview">
+            <button type="button" class="btn-toggle-preview" (click)="turn.showRawPreview = !turn.showRawPreview">
+              {{ turn.showRawPreview ? 'Masquer' : 'Voir' }} la proposition rejetée par le filtre de citation
+            </button>
+            <div class="raw-preview-box" *ngIf="turn.showRawPreview">
+              <div class="raw-preview-label">Texte du modèle non validé :</div>
+              <pre class="raw-preview-text" dir="auto">{{ turn.response.raw_preview }}</pre>
+              <div class="gate-error" *ngIf="turn.response.error">Motif : {{ turn.response.error }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ANSWERED -->
+        <div class="answered-box" *ngIf="turn.response.status === 'answered'">
+          <!-- Prose Answer -->
+          <div class="answer-card" (click)="onAnswerClick($event, turn.id)">
+            <div class="answer-card-header">
+              <span class="answer-badge">Réponse documentée</span>
+              <span class="answer-hint">Cliquez sur un identifiant [S#] pour naviguer jusqu'à la source</span>
+            </div>
+            <div class="answer-prose" dir="auto" [innerHTML]="turn.response.answer | piiFormat"></div>
+          </div>
+
+          <!-- Claims & Evidence Cards -->
+          <div class="section-container claims-section" *ngIf="turn.response.claims && turn.response.claims.length > 0">
+            <div class="section-toggle-header" (click)="turn.claimsExpanded = !turn.claimsExpanded">
+              <div class="section-header-left">
+                <span class="toggle-icon">{{ turn.claimsExpanded ? '▼' : '▶' }}</span>
+                <span class="section-title">Affirmations &amp; Preuves mot à mot</span>
+                <span class="count-pill">{{ turn.response.claims.length }}</span>
+              </div>
+              <span class="section-toggle-hint">{{ turn.claimsExpanded ? 'Réduire' : 'Déplier' }}</span>
+            </div>
+
+            <div class="claims-list" *ngIf="turn.claimsExpanded">
+              <div class="claim-card" *ngFor="let claim of turn.response.claims; let cIdx = index; trackBy: trackIndex">
+                <div class="claim-main-row">
+                  <span class="claim-index">#{{ cIdx + 1 }}</span>
+                  <div class="claim-statement" dir="auto" [innerHTML]="claim.text | piiFormat"></div>
+                </div>
+
+                <!-- Evidence Quotes -->
+                <div class="evidence-list" *ngIf="claim.evidence && claim.evidence.length > 0">
+                  <div class="evidence-card" *ngFor="let ev of claim.evidence; let evIdx = index; trackBy: trackIndex">
+                    <div class="evidence-top-bar">
+                      <div class="evidence-chip-group">
+                        <button type="button" class="source-link-chip"
+                                (click)="scrollToSource(turn.id, ev.source_id)"
+                                title="Faire défiler jusqu'à la source">
+                          [{{ ev.source_id }}]
+                        </button>
+                        <span class="verified-label">Citation vérifiée dans la langue source</span>
+                      </div>
+                      <button type="button" class="btn-copy-quote"
+                              (click)="copyQuote(ev.quote, turn.id + '_' + cIdx + '_' + evIdx)">
+                        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        <span>{{ copiedQuoteIndex === (turn.id + '_' + cIdx + '_' + evIdx) ? 'Copié !' : 'Copier' }}</span>
+                      </button>
+                    </div>
+
+                    <div class="quote-container" dir="auto">
+                      <span class="quote-sign">“</span>
+                      <p class="quote-body" [innerHTML]="cleanQuote(ev.quote) | piiFormat"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sources Table / List -->
+          <div class="section-container sources-section" *ngIf="turn.response.sources && turn.response.sources.length > 0">
+            <div class="section-toggle-header" (click)="turn.sourcesExpanded = !turn.sourcesExpanded">
+              <div class="section-header-left">
+                <span class="toggle-icon">{{ turn.sourcesExpanded ? '▼' : '▶' }}</span>
+                <span class="section-title">Fragments de documents cités</span>
+                <span class="count-pill">{{ turn.response.sources.length }}</span>
+              </div>
+              <span class="section-toggle-hint">{{ turn.sourcesExpanded ? 'Réduire' : 'Déplier' }}</span>
+            </div>
+
+            <div class="sources-list" *ngIf="turn.sourcesExpanded">
+              <div class="source-card" *ngFor="let src of turn.response.sources; trackBy: trackSource" [id]="turn.id + '_src_' + src.source_id">
+                <div class="source-card-header">
+                  <div class="source-badge-wrap">
+                    <span class="source-id-badge">[{{ src.source_id }}]</span>
+                    <span class="source-filename">{{ src.document }}</span>
+                  </div>
+                  <div class="source-meta-wrap">
+                    <span class="source-heading-badge" *ngIf="src.heading">{{ src.heading }}</span>
+                    <span class="source-chunk-tag" *ngIf="src.chunk_id">{{ src.chunk_id }}</span>
+                  </div>
+                </div>
+                <div class="source-body" *ngIf="src.text" dir="auto">
+                  <div class="source-text-block" [innerHTML]="cleanExcerpt(src.text) | piiFormat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state if no conversation yet -->
+  <div class="empty-chat-state" *ngIf="turns.length === 0">
+    <div class="empty-icon-box">
+      <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="1.75" fill="none">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </div>
+    <h3>Console RAGLab — Interrogation sécurisée</h3>
+    <p>
+      Le moteur extrait les passages pertinents, formule des affirmations sourcées et vérifie
+      chaque citation mot à mot ainsi que chaque montant avant de renvoyer la réponse.
+    </p>
+
+    <!-- Empty index warning if index count is 0 -->
+    <div class="empty-index-alert" *ngIf="raglab.isEmptyIndex()">
+      <div class="alert-title">L'index est vide (0 fragment).</div>
+      <div class="alert-desc">Veuillez vous rendre dans l'onglet <strong>Documents</strong> pour construire ou réindexer le corpus.</div>
+    </div>
+  </div>
+
+  <!-- Composer Box (Pinned at bottom) -->
+  <div class="composer-container">
+    <div class="composer-options-bar">
+      <div class="option-group">
+        <label for="lang-select">Langue :</label>
+        <select id="lang-select" [(ngModel)]="queryLang" class="form-select-sm">
+          <option value="">Détection automatique</option>
+          <option value="fr">Français (fr)</option>
+          <option value="ar">العربية (ar)</option>
+          <option value="en">English (en)</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn-text-sm" (click)="toggleAdvanced()">
+        {{ showAdvanced ? '▲ Masquer paramètres' : '▼ Paramètres avancés' }}
+      </button>
+    </div>
+
+    <!-- Advanced disclosure -->
+    <div class="advanced-disclosure" *ngIf="showAdvanced">
+      <div class="adv-field">
+        <label for="k-slider">Fragments récupérés (k) : <strong>{{ k || 'défaut profil' }}</strong></label>
+        <input id="k-slider" type="range" min="1" max="20" [(ngModel)]="k" class="slider-sm">
+      </div>
+      <div class="adv-field">
+        <label for="mode-select">Mode de recherche :</label>
+        <select id="mode-select" [(ngModel)]="mode" class="form-select-sm">
+          <option value="">Mode du profil</option>
+          <option value="vector">Vectoriel pur (vector)</option>
+          <option value="rrf">RRF (Reciprocal Rank Fusion)</option>
+          <option value="blend">Hybride (blend)</option>
+        </select>
+      </div>
+      <div class="adv-field checkbox-field">
+        <label>
+          <input type="checkbox" [(ngModel)]="includeExcerpts">
+          Inclure le texte intégral des fragments dans les sources
+        </label>
+      </div>
+    </div>
+
+    <!-- Textarea and Send button -->
+    <form class="composer-form" (ngSubmit)="onSubmit()">
+      <textarea
+        class="composer-textarea"
+        [(ngModel)]="questionInput"
+        name="question"
+        rows="2"
+        dir="auto"
+        placeholder="Posez une question au corpus réglementaire (ex: Quels sont les principes de la Mourabaha ?)"
+        [disabled]="raglab.isSealed()"></textarea>
+
+      <button
+        type="submit"
+        class="btn-send"
+        [disabled]="!questionInput.trim() || raglab.isSealed()">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <span>Envoyer</span>
+      </button>
+    </form>
+  </div>
+</div>

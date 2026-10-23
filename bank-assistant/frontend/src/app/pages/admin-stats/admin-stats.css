@@ -1,0 +1,15 @@
+.denom { font-size: 16px; color: var(--text-3); font-weight: 500; letter-spacing: 0; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.two-col .card { margin: 0; }
+@media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
+.dist + .dist { margin-top: 14px; }
+.dist-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: 13px; }
+.dist-label { font-weight: 500; display: flex; gap: 8px; align-items: center; }
+.dist-val { font-variant-numeric: tabular-nums; }
+.daily { margin-top: 16px; }
+.columns { display: flex; align-items: flex-end; gap: 6px; overflow-x: auto; padding: 8px 0 4px; }
+.col { flex: 1; min-width: 26px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.col-val { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.col-bar { width: 100%; max-width: 28px; min-height: 2px; background: #c9d2df; border-radius: 3px 3px 0 0; transition: height .3s; }
+.col:hover .col-bar { background: var(--brand); }
+.col-date { font-size: 10.5px; color: var(--text-3); white-space: nowrap; }

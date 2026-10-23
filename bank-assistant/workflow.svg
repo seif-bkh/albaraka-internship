@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1180" viewBox="0 0 1360 1180" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#5b6470"/>
+    </marker>
+    <marker id="arrB" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1f7a5c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1360" height="1180" fill="#fbfcfe"/>
+
+  <!-- Title -->
+  <text x="680" y="34" font-size="22" font-weight="bold" text-anchor="middle" fill="#152a3a">AI Assistant — structured request pipeline ( f(x) )</text>
+  <text x="680" y="56" font-size="13" fill="#5b6470" text-anchor="middle">every customer message is normalized into a typed request x, routed to a scoped handler, and gated before it reaches the customer</text>
+
+  <!-- ============ STEP 0 : entry ============ -->
+  <rect x="520" y="78" width="320" height="58" rx="29" fill="#152a3a"/>
+  <text x="680" y="103" font-size="15" fill="#fff" text-anchor="middle" font-weight="bold">Customer message (FR / AR / EN)</text>
+  <text x="680" y="122" font-size="12" fill="#cdd6e0" text-anchor="middle">reaches the public assistant via the Angular SPA → Spring edge</text>
+
+  <!-- arrow down -->
+  <line x1="680" y1="136" x2="680" y2="168" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ============ STEP 1 : normalize to x ============ -->
+  <rect x="380" y="170" width="600" height="70" rx="10" fill="#e9f2fb" stroke="#2b6cb0" stroke-width="2"/>
+  <text x="680" y="194" font-size="15" font-weight="bold" text-anchor="middle" fill="#1a3a5c">1 · Normalize → typed request x  (LLM structured extraction)</text>
+  <text x="680" y="214" font-size="12.5" text-anchor="middle" fill="#33506d">x = { domain, intent, topic, slots {amount, term, client_type…}, language, confidence }</text>
+  <text x="680" y="230" font-size="11.5" fill="#8a94a1" text-anchor="middle">The taxonomy list + few-shot examples are the schema; the model must return JSON, not free text</text>
+
+  <!-- arrow down -->
+  <line x1="680" y1="240" x2="680" y2="272" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ============ DECISION A : in scope ? ============ -->
+  <polygon points="680,274 880,322 680,370 480,322" fill="#fff" stroke="#c9a227" stroke-width="2"/>
+  <text x="680" y="315" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#8a6d0f">IN SCOPE?</text>
+  <text x="680" y="334" font-size="11" text-anchor="middle" fill="#8a6d0f">domain known &amp; confident</text>
+
+  <!-- NO branch left -->
+  <line x1="480" y1="322" x2="300" y2="322" stroke="#c0392b" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="392" y="312" font-size="12" fill="#c0392b" text-anchor="middle">NO / low confidence</text>
+
+  <!-- YES branch down -->
+  <line x1="680" y1="370" x2="680" y2="404" stroke="#1f7a5c" stroke-width="2.5" marker-end="url(#arrB)"/>
+  <text x="700" y="392" font-size="12" fill="#1f7a5c">YES</text>
+
+  <!-- ============ OUT OF SCOPE handler (left) ============ -->
+  <rect x="60" y="276" width="200" height="54" rx="9" fill="#fdeeee" stroke="#c0392b" stroke-width="1.8"/>
+  <text x="160" y="299" font-size="13.5" font-weight="bold" text-anchor="middle" fill="#a0291f">Out-of-scope handler</text>
+  <text x="160" y="318" font-size="11" text-anchor="middle" fill="#b95a52">structured rejection + reason code</text>
+
+  <line x1="160" y1="330" x2="160" y2="366" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- three rejection reasons -->
+  <rect x="18" y="368" width="285" height="54" rx="8" fill="#fff3f3" stroke="#e0a0a0"/>
+  <text x="160" y="388" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#7a3028">not_offered</text>
+  <text x="160" y="405" font-size="11" text-anchor="middle" fill="#9c5a52">bank doesn't offer this (crypto, riba…)</text>
+
+  <rect x="18" y="430" width="285" height="54" rx="8" fill="#fff8e8" stroke="#e0c060"/>
+  <text x="160" y="450" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#7a5a10">knowledge_gap</text>
+  <text x="160" y="467" font-size="11" text-anchor="middle" fill="#a08030">in scope but corpus has nothing → admin signal</text>
+
+  <rect x="18" y="492" width="285" height="54" rx="8" fill="#eef3fb" stroke="#7a9cc0"/>
+  <text x="160" y="512" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#2a4a6a">hand_to_human</text>
+  <text x="160" y="529" font-size="11" text-anchor="middle" fill="#5a7690">advice / disputes → route to staff contact</text>
+
+  <!-- rejection log arrow right toward admin -->
+  <line x1="303" y1="460" x2="482" y2="460" stroke="#5b6470" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arr)"/>
+  <text x="360" y="452" font-size="10.5" fill="#8a94a1" text-anchor="middle">log reason →</text>
+
+  <!-- ============ DECISION B : under-specified ? ============ -->
+  <polygon points="680,406 850,448 680,490 510,448" fill="#fff" stroke="#2b6cb0" stroke-width="2"/>
+  <text x="680" y="441" font-size="12.5" font-weight="bold" text-anchor="middle" fill="#1a3a5c">MISSING SLOTS?</text>
+  <text x="680" y="458" font-size="11" text-anchor="middle" fill="#33506d">x under-specified</text>
+  <text x="680" y="474" font-size="11" text-anchor="middle" fill="#33506d">for chosen template</text>
+
+  <!-- YES left-up -->
+  <line x1="510" y1="448" x2="300" y2="340" stroke="#b57b00" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="330" y="405" font-size="12" fill="#b57b00" text-anchor="middle">under-specified → ASK 1 clarifying question</text>
+  <line x1="300" y1="332" x2="300" y2="110" stroke="#b57b00" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="300" y1="110" x2="514" y2="110" stroke="#b57b00" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="420" y="104" font-size="11" fill="#b57b00" text-anchor="middle">back to user to fill x</text>
+
+  <!-- NO down -->
+  <line x1="680" y1="490" x2="680" y2="522" stroke="#1f7a5c" stroke-width="2.5" marker-end="url(#arrB)"/>
+  <text x="700" y="512" font-size="12" fill="#1f7a5c">YES → (filled)</text>
+
+  <!-- ============ STEP : deterministic router ============ -->
+  <rect x="420" y="524" width="520" height="58" rx="10" fill="#e8f4ee" stroke="#1f7a5c" stroke-width="2"/>
+  <text x="680" y="548" font-size="15" font-weight="bold" text-anchor="middle" fill="#14573e">2 · Deterministic router  (domain × intent) — plain code, no LLM</text>
+  <text x="680" y="568" font-size="11.5" text-anchor="middle" fill="#3f6b58">exact switch on the parsed x → reproducible &amp; testable</text>
+
+  <line x1="680" y1="582" x2="680" y2="614" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ============ handler lanes ============ -->
+  <text x="680" y="636" font-size="13" font-weight="bold" text-anchor="middle" fill="#152a3a">Domain handler (each is a small, independently regulable recipe)</text>
+
+  <!-- lane boxes -->
+  <g font-size="12">
+    <rect x="20"  y="650" width="180" height="92" rx="9" fill="#f2f6fb" stroke="#7a9cc0"/>
+    <text x="110" y="674" font-weight="bold" text-anchor="middle" fill="#1a3a5c">Financement</text>
+    <text x="110" y="692" text-anchor="middle" fill="#3a5a7a">Mourabaha, Ijarah,</text>
+    <text x="110" y="707" text-anchor="middle" fill="#3a5a7a">Istisnaa, Mubadala…</text>
+    <text x="110" y="726" font-size="10.5" fill="#8a94a1" text-anchor="middle">rates · conditions · docs</text>
+
+    <rect x="215" y="650" width="180" height="92" rx="9" fill="#f2f6fb" stroke="#7a9cc0"/>
+    <text x="305" y="674" font-weight="bold" text-anchor="middle" fill="#1a3a5c">Comptes &amp; Dépôts</text>
+    <text x="305" y="692" text-anchor="middle" fill="#3a5a7a">CCSI, CEAI,</text>
+    <text x="305" y="707" text-anchor="middle" fill="#3a5a7a">Hab Esser (Mudaraba)</text>
+    <text x="305" y="726" font-size="10.5" fill="#8a94a1" text-anchor="middle">types · interest · openings</text>
+
+    <rect x="410" y="650" width="180" height="92" rx="9" fill="#f2f6fb" stroke="#7a9cc0"/>
+    <text x="500" y="674" font-weight="bold" text-anchor="middle" fill="#1a3a5c">Cartes &amp; Paiement</text>
+    <text x="500" y="692" text-anchor="middle" fill="#3a5a7a">cards, transfers,</text>
+    <text x="500" y="707" text-anchor="middle" fill="#3a5a7a">payments abroad</text>
+    <text x="500" y="726" font-size="10.5" fill="#8a94a1" text-anchor="middle">fees · limits · use</text>
+
+    <rect x="605" y="650" width="180" height="92" rx="9" fill="#f2f6fb" stroke="#7a9cc0"/>
+    <text x="695" y="674" font-weight="bold" text-anchor="middle" fill="#1a3a5c">Conformité &amp; Charia</text>
+    <text x="695" y="692" text-anchor="middle" fill="#3a5a7a">BCT circulars, laws,</text>
+    <text x="695" y="707" text-anchor="middle" fill="#3a5a7a">Fiqh / Riba / Halal</text>
+    <text x="695" y="726" font-size="10.5" fill="#8a94a1" text-anchor="middle">legal &amp; religious rulings</text>
+
+    <rect x="800" y="650" width="180" height="92" rx="9" fill="#f2f6fb" stroke="#7a9cc0"/>
+    <text x="890" y="674" font-weight="bold" text-anchor="middle" fill="#1a3a5c">Service &amp; Agences</text>
+    <text x="890" y="692" text-anchor="middle" fill="#3a5a7a">branches, hours,</text>
+    <text x="890" y="707" text-anchor="middle" fill="#3a5a7a">fees, freeze, contact</text>
+    <text x="890" y="726" font-size="10.5" fill="#8a94a1" text-anchor="middle">locations · operations</text>
+
+    <rect x="995" y="650" width="180" height="92" rx="9" fill="#e9f6f1" stroke="#5aa08a"/>
+    <text x="1085" y="674" font-weight="bold" text-anchor="middle" fill="#14573e">Conversationnel</text>
+    <text x="1085" y="692" text-anchor="middle" fill="#3f6b58">greeting, thanks,</text>
+    <text x="1085" y="707" text-anchor="middle" fill="#3f6b58">small talk</text>
+    <text x="1085" y="726" font-size="10.5" fill="#6a8f7f" text-anchor="middle">direct reply, no RAG</text>
+
+    <rect x="1190" y="650" width="150" height="92" rx="9" fill="#fbf1f0" stroke="#c9a0a0"/>
+    <text x="1265" y="674" font-weight="bold" text-anchor="middle" fill="#8a2a20">Hors périmètre</text>
+    <text x="1265" y="700" text-anchor="middle" fill="#a05a52">→ rejection</text>
+    <text x="1265" y="716" text-anchor="middle" fill="#a05a52">handler</text>
+  </g>
+
+  <!-- arrow into lanes -->
+  <line x1="680" y1="614" x2="680" y2="640" stroke="#5b6470" stroke-width="1.4"/>
+  <!-- spread arrows from 680,650 to each lane top center -->
+  <g stroke="#5b6470" stroke-width="1.4">
+    <line x1="680" y1="644" x2="110" y2="650"/>
+    <line x1="680" y1="644" x2="305" y2="650"/>
+    <line x1="680" y1="644" x2="500" y2="650"/>
+    <line x1="680" y1="644" x2="695" y2="650"/>
+    <line x1="680" y1="644" x2="890" y2="650"/>
+    <line x1="680" y1="644" x2="1085" y2="650"/>
+    <line x1="680" y1="644" x2="1265" y2="650"/>
+  </g>
+
+  <!-- ============ retrieval & build (right of lanes, converge below) ============ -->
+  <line x1="200" y1="742" x2="440" y2="772" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="560" y1="742" x2="760" y2="772" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1000" y1="742" x2="900" y2="772" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="300" y="774" width="760" height="64" rx="10" fill="#eef6ef" stroke="#1f7a5c" stroke-width="2"/>
+  <text x="680" y="798" font-size="14.5" font-weight="bold" text-anchor="middle" fill="#14573e">3 · Scoped grounded generation  (RAG retrieval + governed facts)</text>
+  <text x="680" y="817" font-size="11.5" text-anchor="middle" fill="#3f6b58">retrieve from the domain's corpus slice + the admin-governed rates / products / templates store</text>
+  <text x="680" y="832" font-size="11" text-anchor="middle" fill="#5a7a68">no free-floating search; business figures never come from a prompt string</text>
+
+  <!-- arrow down to structured answer -->
+  <line x1="680" y1="838" x2="680" y2="864" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="420" y="866" width="520" height="52" rx="10" fill="#eef3fb" stroke="#2b6cb0" stroke-width="2"/>
+  <text x="680" y="888" font-size="14" font-weight="bold" text-anchor="middle" fill="#1a3a5c">4 · Build structured answer (fill the template)</text>
+  <text x="680" y="906" font-size="11.5" text-anchor="middle" fill="#33506d">topic, facts, citations, required-section checklist → guarantees coverage, stays auditable</text>
+
+  <line x1="680" y1="918" x2="680" y2="944" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="420" y="946" width="520" height="52" rx="10" fill="#f4eefb" stroke="#7a5ac0" stroke-width="2"/>
+  <text x="680" y="968" font-size="14" font-weight="bold" text-anchor="middle" fill="#3a2a7a">5 · Reformulate → natural conversational text</text>
+  <text x="680" y="986" font-size="11.5" text-anchor="middle" fill="#5a4a9a">strict structure internally, natural wording &amp; RTL for the customer</text>
+
+  <line x1="680" y1="998" x2="680" y2="1024" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="420" y="1026" width="520" height="52" rx="10" fill="#fdf3e7" stroke="#c97a1f" stroke-width="2"/>
+  <text x="680" y="1048" font-size="14" font-weight="bold" text-anchor="middle" fill="#7a4a10">6 · Output gates</text>
+  <text x="680" y="1066" font-size="11.5" text-anchor="middle" fill="#a06a30">hallucination check + PII scrub + citation verify → THEN send</text>
+
+  <!-- final arrow down -->
+  <line x1="680" y1="1078" x2="680" y2="1098" stroke="#5b6470" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ============ bottom strip : response + persist + admin loop ============ -->
+  <rect x="40" y="1100" width="1280" height="60" rx="10" fill="#152a3a"/>
+  <text x="300" y="1126" font-size="13" fill="#fff" font-weight="bold">Answer → customer</text>
+  <text x="300" y="1146" font-size="11" fill="#cdd6e0">conversation persisted + cost settled (Java owns schema)</text>
+  <line x1="600" y1="1110" x2="600" y2="1150" stroke="#3a4a5a" stroke-width="2"/>
+  <text x="760" y="1126" font-size="13" fill="#fff" font-weight="bold">Audit log &amp; quality flags</text>
+  <text x="760" y="1146" font-size="11" fill="#cdd6e0">every x, answer, reason code, source, cost recorded</text>
+  <line x1="980" y1="1110" x2="980" y2="1150" stroke="#3a4a5a" stroke-width="2"/>
+  <text x="1210" y="1126" font-size="13" fill="#9fd6c0" font-weight="bold">Admin back-office</text>
+  <text x="1210" y="1146" font-size="11" fill="#cdd6e0">edits taxonomy, templates, facts, documents — closes the loop</text>
+
+  <!-- admin loop dashed back to top of pipeline (step 1 schema & domain) -->
+  <path d="M1265,1100 L1265,1080 C1265,1070 1315,1070 1315,1060 L1315,1050" fill="none" stroke="#1f7a5c" stroke-width="2" stroke-dasharray="6,5"/>
+  <text x="1340" y="1080" font-size="11" fill="#1f7a5c" transform="rotate(90 1340 1080)" text-anchor="middle">regulation feeds back into taxonomy, governed facts &amp; documents (step 1 &amp; 3)</text>
+</svg>

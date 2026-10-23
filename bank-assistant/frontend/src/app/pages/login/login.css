@@ -1,0 +1,218 @@
+/* Connexion unifiée : Espace Client / Espace Personnel */
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  background: #fff;
+  font-size: 14px;
+}
+
+/* ── Panneau marque ─────────────────────────────────────────────── */
+.brand-panel {
+  position: relative;
+  background: var(--ink, #101418);
+  background-image:
+    radial-gradient(75% 90% at 85% 0%, rgba(245, 136, 28, .38) 0%, transparent 55%),
+    radial-gradient(65% 85% at 8% 100%, rgba(224, 18, 47, .4) 0%, transparent 58%);
+  color: #fff;
+  padding: 28px 44px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.back-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #b8bfc9;
+  font-size: 13px;
+  font-weight: 500;
+  width: fit-content;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  transition: color .15s ease, border-color .15s ease;
+}
+.back-home:hover { color: #fff; border-color: rgba(255,255,255,.4); }
+.back-home svg { width: 14px; height: 14px; }
+[dir='rtl'] .back-home svg { transform: scaleX(-1); }
+
+.brand-inner { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 26px; max-width: 480px; margin-inline: auto; width: 100%; }
+.brand-logo { width: 200px; height: auto; background: #fff; border-radius: 12px; padding: 10px 16px; }
+.brand-copy h1 { color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.02em; }
+.brand-copy p { color: #aab2bc; font-size: 14.5px; line-height: 1.6; margin: 0; }
+.brand-points { display: grid; gap: 16px; margin: 8px 0 0; padding: 0; list-style: none; }
+.brand-points li { display: flex; gap: 13px; align-items: flex-start; }
+.pt-ico {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.14);
+  display: grid;
+  place-items: center;
+  color: var(--brand-orange, #f5881c);
+}
+.pt-ico svg { width: 18px; height: 18px; }
+.brand-points strong { display: block; font-size: 14px; color: #fff; }
+.brand-points span { font-size: 12.5px; color: #aab2bc; }
+.legal { font-size: 11.5px; color: #6f7784; text-align: center; }
+
+/* ── Panneau formulaire ─────────────────────────────────────────── */
+.form-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
+.form-box { width: 100%; max-width: 420px; display: grid; gap: 18px; }
+.form-logo { width: 74px; height: auto; margin-inline: auto; }
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg, #f4f5f7);
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+.tab {
+  border-radius: 9px;
+  padding: 9px 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2, #4b5563);
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.tab.on {
+  background: #fff;
+  color: var(--brand, #e0122f);
+  box-shadow: 0 1px 4px rgba(16, 20, 24, .12);
+}
+.tab-headline { text-align: center; }
+.tab-headline h2 { font-size: 19px; margin: 0 0 5px; }
+.lead { color: var(--text-2, #4b5563); font-size: 13.5px; margin: 0; }
+
+.alert { border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+.alert.error { background: var(--err-soft, #fdeceb); color: var(--err, #c0271d); }
+.alert.ok { background: var(--ok-soft, #e6f4ec); color: var(--ok, #1a7f4b); }
+
+.form-group { display: grid; gap: 6px; margin-bottom: 15px; }
+.form-group label { font-size: 12.5px; font-weight: 600; color: var(--text-2, #4b5563); }
+.label-row { display: flex; justify-content: space-between; align-items: baseline; }
+.forgot-link { font-size: 12px; color: var(--text-3, #8a93a3); cursor: pointer; }
+.forgot-link:hover { color: var(--brand, #e0122f); }
+.form-control {
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 14px;
+  background: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  width: 100%;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--brand, #e0122f);
+  box-shadow: var(--ring, 0 0 0 3px rgba(224,18,47,.14));
+}
+.btn-primary.btn-block {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--brand, #e0122f);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 12px 18px;
+  transition: background .15s ease, transform .1s ease;
+}
+.btn-primary.btn-block:hover:not(:disabled) { background: var(--brand-hover, #c30f28); }
+.btn-primary.btn-block:disabled { opacity: .55; }
+.spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  animation: spin .8s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.switch-line { text-align: center; font-size: 13px; color: var(--text-2, #4b5563); margin: 0; }
+.switch-line a { color: var(--brand, #e0122f); font-weight: 600; }
+.switch-line a:hover { text-decoration: underline; }
+.foot { text-align: center; font-size: 11.5px; color: var(--text-3, #8a93a3); margin: 0; }
+
+.dev-quick-strip {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-quick-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dev-quick-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-dev-quick {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-dev-quick.admin {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.btn-dev-quick.admin:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.btn-dev-quick.client {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.btn-dev-quick.client:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.btn-dev-quick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .login-page { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
+}

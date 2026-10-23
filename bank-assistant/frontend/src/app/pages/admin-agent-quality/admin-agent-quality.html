@@ -1,0 +1,266 @@
+<div class="page-header">
+  <div>
+    <h2>Qualité des réponses</h2>
+    <p class="muted">
+      Ce que le moteur a répondu, sur quels extraits — et ce que le corpus contient réellement.
+    </p>
+  </div>
+</div>
+
+<div class="alert error" *ngIf="errorMessage"><span>{{ errorMessage }}</span></div>
+
+<!-- ------------------------------------------------------------- question -->
+<div class="card">
+  <div class="card-head">
+    <h3>Question</h3>
+    <span class="badge neutral plain" *ngIf="!canSpend">
+      La permission RAGLab Exécuter est requise pour lancer une recherche.
+    </span>
+  </div>
+
+  <div class="form-group">
+    <label for="q">Question posée</label>
+    <textarea id="q" name="q" rows="2" class="form-control" [(ngModel)]="question"
+              placeholder="Quels sont les frais de tenue de compte ?"></textarea>
+    <small>Une question telle qu'un client la poserait : c'est ce que le moteur recevra.</small>
+  </div>
+
+  <div class="knobs">
+    <div class="form-group">
+      <label for="k">k (extraits)</label>
+      <input id="k" name="k" type="number" min="1" max="20" class="form-control" [(ngModel)]="k"
+             placeholder="défaut">
+    </div>
+    <div class="form-group">
+      <label for="mode">Mode</label>
+      <select id="mode" name="mode" class="form-control" [(ngModel)]="mode">
+        <option *ngFor="let m of modes" [value]="m.value">{{ m.label }}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="lang">Langue (récupération &amp; réponse)</label>
+      <select id="lang" name="lang" class="form-control" [(ngModel)]="langFilter">
+        <option *ngFor="let l of langs" [value]="l.value">{{ l.label }}</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="radius">Voisins (0–2)</label>
+      <input id="radius" name="radius" type="number" min="0" max="2" class="form-control"
+             [(ngModel)]="neighborRadius" placeholder="défaut">
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-primary" type="button" (click)="ask()"
+            [disabled]="loading || !canSpend || !question.trim()">
+      {{ loading && panel === 'answer' ? 'Interrogation…' : 'Réponse sourcée' }}
+    </button>
+    <button class="btn-secondary" type="button" (click)="retrieve()"
+            [disabled]="loading || !canSpend || !question.trim()">
+      Récupération seule
+    </button>
+    <span class="muted">La réponse sourcée consomme un appel d'embedding et un appel de chat.</span>
+  </div>
+</div>
+
+<!-- ---------------------------------------------------------- grounded answer -->
+<div class="card" *ngIf="answerResult">
+  <div class="card-head">
+    <h3>Réponse</h3>
+    <div class="head-right">
+      <span class="badge" [ngClass]="statusBadge()">{{ statusLabel() }}</span>
+      <span class="badge neutral plain" *ngIf="answerResult.view?.reason">
+        {{ answerResult.view?.reason }}
+      </span>
+      <span class="muted">{{ answerResult.latencyMs }} ms</span>
+      <button class="btn-secondary" type="button" (click)="showRawAnswer = !showRawAnswer">
+        {{ showRawAnswer ? 'Masquer le brut' : 'Réponse brute' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="kv-grid">
+    <div class="kv">
+      <span class="kv-label">Affirmations</span>
+      <span class="kv-value">
+        {{ answerResult.view?.claims?.length || 0 }} dont
+        <strong>{{ answerResult.view?.citedClaims || 0 }}</strong> sourcée(s)
+        <span class="badge warning" *ngIf="answerResult.view?.uncitedClaims">
+          {{ answerResult.view?.uncitedClaims }} sans citation
+        </span>
+      </span>
+    </div>
+    <div class="kv">
+      <span class="kv-label">Sources</span>
+      <span class="kv-value">
+        {{ answerResult.view?.sources?.length || 0 }}
+        <span class="badge warning" *ngIf="answerResult.view?.uncitedSourceIds?.length">
+          {{ answerResult.view?.uncitedSourceIds?.length }} non citée(s) :
+          {{ answerResult.view?.uncitedSourceIds?.join(', ') }}
+        </span>
+      </span>
+    </div>
+    <div class="kv" *ngIf="answerResult.view?.seconds !== null && answerResult.view?.seconds !== undefined">
+      <span class="kv-label">Durée côté service</span>
+      <span class="kv-value">{{ answerResult.view?.seconds }} s</span>
+    </div>
+    <div class="kv">
+      <span class="kv-label">Indicateurs</span>
+      <span class="kv-value">
+        <span class="badge neutral plain" *ngIf="answerResult.view?.cached">réponse en cache</span>
+        <span class="badge neutral plain" *ngIf="answerResult.view?.inferencePerformed === false">
+          aucun appel de modèle
+        </span>
+        <span class="muted" *ngIf="!answerResult.view?.cached && answerResult.view?.inferencePerformed !== false">
+          appel frais
+        </span>
+      </span>
+    </div>
+  </div>
+
+  <p class="refusal-hint" *ngIf="answerResult.view?.refused">
+    {{ refusalHint(answerResult.view?.reason) }}
+  </p>
+
+  <!-- The verified part: claim → verbatim quote. -->
+  <h4 class="section-title">Affirmations et citations</h4>
+  <p class="muted" *ngIf="!answerResult.view?.claims?.length">
+    Aucune affirmation : le service n'a pas produit de réponse décomposée.
+  </p>
+  <div class="claim" *ngFor="let claim of (answerResult.view?.claims || []); trackBy: trackClaim">
+    <p class="claim-text">{{ claim.text }}</p>
+    <div class="evidence" *ngIf="claim.evidence?.length">
+      <div class="quote" *ngFor="let ev of claim.evidence">
+        <span class="badge info plain">{{ ev.sourceId }}</span>
+        <blockquote>{{ ev.quote }}</blockquote>
+      </div>
+    </div>
+    <p class="uncited" *ngIf="!claim.evidence?.length">
+      Sans citation vérifiée — prose du modèle, à ne pas présenter comme fondée.
+    </p>
+  </div>
+
+  <!-- The prose: shown, never sold as verified. -->
+  <ng-container *ngIf="answerResult.view?.answerText">
+    <h4 class="section-title">Réponse rédigée</h4>
+    <p class="prose">{{ answerResult.view?.answerText }}</p>
+    <p class="muted caveat">
+      Texte du modèle : seul le contenu des citations ci-dessus est contrôlé par la porte de
+      vérification du service. À ne pas présenter comme vérifié.
+    </p>
+  </ng-container>
+
+  <h4 class="section-title" *ngIf="answerResult.view?.sources?.length">Sources retournées</h4>
+  <div class="table-wrapper" *ngIf="answerResult.view?.sources?.length">
+    <table>
+      <thead>
+        <tr><th>Id</th><th>Document</th><th>Chunk</th><th>Section</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of (answerResult.view?.sources || [])">
+          <td class="mono">{{ s.sourceId }}</td>
+          <td>{{ s.document }}</td>
+          <td class="mono">{{ s.chunkId }}</td>
+          <td>{{ s.heading || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="toolbar" *ngIf="answerResult.view?.refused">
+    <button class="btn-secondary" type="button" (click)="probeRetrieval()">
+      Voir ce qui a été récupéré pour cette question
+    </button>
+  </div>
+
+  <pre class="raw" *ngIf="showRawAnswer">{{ rawAnswer() }}</pre>
+</div>
+
+<!-- ---------------------------------------------------------------- retrieval -->
+<div class="card" *ngIf="retrievalResult">
+  <div class="card-head">
+    <h3>Récupération</h3>
+    <div class="head-right">
+      <span class="badge neutral plain">{{ retrievalResult.view?.hits?.length || 0 }} extrait(s)</span>
+      <span class="muted">{{ retrievalResult.latencyMs }} ms</span>
+      <button class="btn-secondary" type="button" (click)="showRawRetrieval = !showRawRetrieval">
+        {{ showRawRetrieval ? 'Masquer le brut' : 'Réponse brute' }}
+      </button>
+    </div>
+  </div>
+
+  <p class="muted" *ngIf="!retrievalResult.view?.hits?.length">
+    Aucun extrait retourné : la question n'atteint pas le corpus tel qu'il est indexé
+    (index vide, profil différent, ou vocabulaire absent des documents).
+  </p>
+
+  <ol class="hits" *ngIf="retrievalResult.view?.hits?.length">
+    <li *ngFor="let hit of (retrievalResult.view?.hits || [])">
+      <div class="hit-head">
+        <span class="badge neutral plain" *ngIf="hit.score !== null">{{ hit.score | number:'1.2-3' }}</span>
+        <strong>{{ hit.document }}</strong>
+        <span class="mono muted" *ngIf="hit.chunkId">{{ hit.chunkId }}</span>
+        <span class="muted" *ngIf="hit.heading">· {{ hit.heading }}</span>
+      </div>
+      <p class="hit-excerpt" *ngIf="hit.excerpt">{{ hit.excerpt }}</p>
+    </li>
+  </ol>
+
+  <pre class="raw" *ngIf="showRawRetrieval">{{ rawRetrieval() }}</pre>
+</div>
+
+<!-- ------------------------------------------------------------ quote lookup -->
+<div class="card">
+  <div class="card-head">
+    <h3>L'extrait existe-t-il dans le corpus ?</h3>
+    <span class="badge success plain">lecture seule — aucun appel de modèle</span>
+  </div>
+  <p class="muted">
+    Le modèle a cité un passage et la réponse a quand même été refusée ? Collez l'extrait ici :
+    s'il n'est nulle part, la citation ne pouvait pas valider.
+  </p>
+
+  <div class="form-group">
+    <label for="quote">Texte ou extrait</label>
+    <textarea id="quote" name="quote" rows="2" class="form-control" [(ngModel)]="quoteText"
+              placeholder="frais de tenue de compte : 12 DT par an"></textarea>
+  </div>
+  <div class="toolbar">
+    <button class="btn-primary" type="button" (click)="lookup()"
+            [disabled]="loading || !canRead || !quoteText.trim()">
+      {{ loading && panel === 'chunks' ? 'Recherche…' : 'Chercher dans le corpus' }}
+    </button>
+    <div class="form-group inline">
+      <label for="limit">Limite</label>
+      <input id="limit" name="limit" type="number" min="1" max="50" class="form-control"
+             [(ngModel)]="quoteLimit" placeholder="défaut">
+    </div>
+  </div>
+
+  <ng-container *ngIf="chunkResult">
+    <p class="verdict" *ngIf="chunkResult.view?.matches?.length">
+      Trouvé dans {{ chunkResult.view?.matches?.length }} extrait(s) — une citation prise ici peut
+      valider.
+    </p>
+    <p class="verdict miss" *ngIf="!chunkResult.view?.matches?.length">
+      Introuvable dans le corpus : aucune citation de ce texte ne peut passer la vérification.
+    </p>
+
+    <div class="match" *ngFor="let match of (chunkResult.view?.matches || [])">
+      <div class="hit-head">
+        <strong>{{ match.document }}</strong>
+        <span class="mono muted" *ngIf="match.chunkId">{{ match.chunkId }}</span>
+        <span class="muted" *ngIf="match.heading">· {{ match.heading }}</span>
+        <span class="muted" *ngIf="match.position !== null">· #{{ match.position }}</span>
+      </div>
+      <p class="hit-excerpt" *ngIf="match.text">{{ match.text }}</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-secondary" type="button" (click)="showRawChunks = !showRawChunks">
+        {{ showRawChunks ? 'Masquer le brut' : 'Réponse brute' }}
+      </button>
+    </div>
+    <pre class="raw" *ngIf="showRawChunks">{{ rawChunks() }}</pre>
+  </ng-container>
+</div>

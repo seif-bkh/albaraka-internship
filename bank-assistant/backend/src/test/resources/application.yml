@@ -1,0 +1,46 @@
+# Test-only configuration.
+#
+# The default profile points at a real PostgreSQL instance on :5433. CI's
+# backend job has no database, so contextLoads() would fail for reasons
+# unrelated to the code under test. Here we start the context against an
+# in-memory H2 database and supply the app.* properties that @Value fields
+# require at startup.
+#
+# NOTE: this validates that the Spring context wires up correctly. It does
+# NOT validate real PostgreSQL/pgvector behaviour — integration tests using
+# Testcontainers should be added for that (see AUDIT.md P2).
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    # Tests build the schema with Hibernate on H2 (create-drop). Flyway is
+    # disabled here because V1__baseline.sql is PostgreSQL-specific.
+    enabled: false
+app:
+  agent:
+    url: http://localhost:8888
+    token: test-agent-token
+    # Never called by the suite: the client is exercised through stored values.
+    raglab:
+      url: http://127.0.0.1:8099
+  cors:
+    allowed-origins: http://localhost:4200
+  jwt:
+    # Test-only value. Never used outside the test classpath.
+    secret: dGVzdC1vbmx5LXNlY3JldC1rZXktZm9yLWNpLXdoaWNoLWlzLWxvbmctZW5vdWdoLTI1Ni1iaXRz
+    expirationMs: 3600000
+    refreshExpirationMs: 604800000
+
+logging:
+  level:
+    org.springframework.web: WARN
+    org.springframework.security: WARN

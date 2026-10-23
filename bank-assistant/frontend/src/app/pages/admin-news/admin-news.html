@@ -1,0 +1,72 @@
+<div class="page-header">
+  <div>
+    <h2>Actualités</h2>
+    <p class="subtitle">Articles affichés sur la page d'accueil publique et l'accueil du portail. Seuls les articles actifs et déjà publiés sont visibles des clients.</p>
+  </div>
+  <button class="btn-primary" *ngIf="canWrite" (click)="openCreate()">Ajouter un article</button>
+</div>
+
+<div *ngIf="!loading && errorMessage" class="alert error">
+  {{ errorMessage }}
+  <button (click)="load()">Réessayer</button>
+</div>
+
+<div class="card flush">
+  <div *ngIf="loading" class="loading-state"><span class="spinner"></span> Chargement…</div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr><th>Titre</th><th>Publication</th><th>Lien externe</th><th>État</th><th *ngIf="canWrite" class="right">Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let n of items" [class.inactive]="!n.active">
+          <td class="value-cell">{{ n.title }}</td>
+          <td class="nowrap">{{ n.publishedAt | date:'dd/MM/yyyy' }}</td>
+          <td class="muted">
+            <a *ngIf="n.externalLink" [href]="n.externalLink" target="_blank" rel="noopener">lien</a>
+            <span *ngIf="!n.externalLink">—</span>
+          </td>
+          <td><span class="badge" [ngClass]="n.active ? 'success' : 'archived'">{{ n.active ? 'actif' : 'désactivé' }}</span></td>
+          <td *ngIf="canWrite"><div class="row-actions">
+            <a (click)="openEdit(n)">Modifier</a>
+            <a (click)="toggleActive(n)" [class.danger]="n.active">{{ n.active ? 'Désactiver' : 'Réactiver' }}</a>
+            <a (click)="remove(n)" class="danger">Supprimer</a>
+          </div></td>
+        </tr>
+        <tr *ngIf="items.length === 0"><td colspan="4" class="empty">Aucun article. La section « Actualités » reste masquée tant qu'il n'y a rien à afficher.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Create / edit -->
+<div class="modal-backdrop" *ngIf="showForm" (click)="showForm = false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <h3>{{ editing ? 'Modifier l’article' : 'Nouvel article' }}</h3>
+    <div class="grid">
+      <label>Titre *
+        <input class="form-control" [(ngModel)]="form.title" maxlength="200" />
+      </label>
+      <label>Date de publication *
+        <input class="form-control" type="date" [(ngModel)]="form.publishedAt" />
+      </label>
+      <label>Lien externe (optionnel)
+        <input class="form-control" [(ngModel)]="form.externalLink" placeholder="https://…" />
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" [(ngModel)]="form.active" /> Actif
+      </label>
+    </div>
+    <label>Corps *
+      <textarea class="form-control" rows="6" [(ngModel)]="form.body" maxlength="4000"></textarea>
+    </label>
+    <div class="alert error" *ngIf="formError">{{ formError }}</div>
+    <div class="modal-actions">
+      <button class="btn-secondary" (click)="showForm = false">Annuler</button>
+      <button class="btn-primary" [disabled]="saving" (click)="save()">
+        {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,382 @@
+# ============================================================
+# Al Baraka Bank Assistant — CI (path-filtered)
+#
+# Per-branch CI is intentionally DISABLED: day-to-day iteration happens on the
+# developer's host with the local harness (`./verify-local.sh`), which runs the
+# same checks in Docker and pushes its log files back to the repo.
+#
+# This workflow fires on pushes to main/master and to agent session branches
+# (arena/**), on pull_requests against main/master, and on workflow_dispatch. Each job gates on whether its area changed
+# (see the `changes` job); a workflow-area change or manual dispatch runs all.
+# On a job failure, a diagnostics step posts the log tail to a GitHub Issue
+# (readable from the agent sandbox, which cannot reach GitHub's log CDN).
+# ============================================================
+name: CI
+
+on:
+  push:
+    # Agent session branches build on every push so the agent can iterate to
+    # green autonomously (AGENTS.md §6); path filtering keeps them cheap.
+    branches: ["master", "main", "arena/**"]
+  pull_request:
+    branches: ["master", "main"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel: each run diffs only its own push (see `changes`), so a
+  # cancelled run's files would never be built by any later run. Queue instead.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write     # allow the diagnostics step to post failure logs as an Issue
+  actions: write    # actions/upload-artifact needs this: without it every job
+                    # "fails" in its upload step on an otherwise green build
+
+jobs:
+  # ----------------------------------------------------------
+  # Which areas changed in this push? Everything else gates on this.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      workflow: ${{ steps.filter.outputs.workflow }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # We push directly to this branch (no PR against a base). By default
+          # paths-filter would diff the WHOLE branch against the repo's default
+          # branch, which has no shared history here => every filter reports
+          # "changed". Pinning base to the branch head before this push makes it
+          # diff only the files introduced by the current push.
+          # (On workflow_dispatch `before` is empty, so it falls back to default
+          # all-changed behaviour, which is exactly what we want for a manual run.)
+          base: ${{ github.event.before }}
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            workflow:
+              - '.github/workflows/**'
+              - 'sonar-project.properties'
+              - 'ci/**'
+              - 'e2e/**'
+              - 'docker-compose.e2e.yml'
+
+  # ----------------------------------------------------------
+  # The migrations are SQL, and the unit tests run on H2 where Flyway is off. A
+  # broken V15 would therefore reach production unbuilt. This job applies every
+  # migration in version order to a real pgvector database and stops at the first
+  # error — the cheapest possible guard for the schema itself.
+  migrations:
+    name: Migrations (Postgres)
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true'
+      || needs.changes.outputs.workflow == 'true'
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: banque_assistant
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply every migration in order
+        env:
+          PGPASSWORD: postgres
+        run: |
+          exec > >(tee /tmp/migrations.log) 2>&1
+          set -euo pipefail
+          M=backend/src/main/resources/db/migration
+
+          # Up to V14: the schema as it exists on a running deployment.
+          for f in $(ls $M/V*.sql | sort -V | grep -v 'V15__'); do
+            echo "== $f"
+            psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d banque_assistant -q -f "$f"
+          done
+
+          # A real database is never empty when the next release runs. The seed that
+          # every deployment carries writes an ÉPARGNE account, and V15 renames that
+          # vocabulary — applying V15 to an empty schema would therefore miss an
+          # ordering bug that only appears on data (a rename executed while the old
+          # CHECK constraint still forbids the new value).
+          echo "== legacy rows: one client, an EPARGNE and a DEPOT account"
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d banque_assistant -q <<'SQL'
+          INSERT INTO clients (email, mot_de_passe, nom, prenom, role, actif)
+          VALUES ('legacy@test.tn', 'x', 'Ben Salah', 'Yassine', 'UTILISATEUR', true);
+          INSERT INTO comptes (client_id, libelle, type, iban, devise, solde, date_ouverture)
+          SELECT id, 'Épargne CEAI', 'EPARGNE', 'TN59LEGACY000000000001', 'TND', 6292.000, now()
+          FROM clients WHERE email = 'legacy@test.tn';
+          INSERT INTO comptes (client_id, libelle, type, iban, devise, solde, date_ouverture)
+          SELECT id, 'Dépôt à terme', 'DEPOT', 'TN59LEGACY000000000002', 'TND', 20000.000, now()
+          FROM clients WHERE email = 'legacy@test.tn';
+          -- A card as an older build could have written it: lower case, and one with
+          -- no network at all. V15 must normalise before it constrains.
+          INSERT INTO cartes (client_id, type, reseau, porteur, expiration, plafond_journalier, bloque)
+          SELECT id, 'EVASION', 'mastercard', '4571 **** **** 0001', '09/29', 1000, false
+          FROM clients WHERE email = 'legacy@test.tn';
+          INSERT INTO cartes (client_id, type, reseau, porteur, expiration, plafond_journalier, bloque)
+          SELECT id, 'GOLD', '', '5213 **** **** 0002', '03/28', 1500, false
+          FROM clients WHERE email = 'legacy@test.tn';
+          SQL
+
+          echo "== V15 onwards"
+          for f in $(ls $M/V*.sql | sort -V | grep 'V15__'); do
+            psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d banque_assistant -q -f "$f"
+          done
+
+          echo "== the rename actually happened"
+          psql -h localhost -U postgres -d banque_assistant -tAc \
+            "SELECT string_agg(type, ',' ORDER BY type) FROM comptes WHERE iban LIKE 'TN59LEGACY%'" \
+            | grep -qx 'COMPTE_EPARGNE,DEPOT_INVESTISSEMENT'
+
+          echo "== card networks were normalised"
+          psql -h localhost -U postgres -d banque_assistant -tAc \
+            "SELECT string_agg(reseau, ',' ORDER BY porteur) FROM cartes WHERE porteur LIKE '%000%'" \
+            | grep -qx 'MASTERCARD,MASTERCARD'
+
+          # V15 must be re-runnable: it is documented as additive and idempotent, and
+          # operators do replay a release on the same database.
+          echo "== applying V15 again (idempotence)"
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d banque_assistant -q \
+            -f $M/V15__customer_banking_model.sql > /dev/null
+      - name: Publish diagnostics (failure)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          REF: ${{ github.ref }}
+        run: |
+          echo "## CI diagnostics — migrations job (run ${RUN}, $REF)" > /tmp/diag.md
+          echo '```' >> /tmp/diag.md
+          tail -n 80 /tmp/migrations.log >> /tmp/diag.md 2>/dev/null || echo 'no log captured' >> /tmp/diag.md
+          echo '```' >> /tmp/diag.md
+          gh issue create --repo "$REPO" --title "CI FAIL migrations $REF (run $RUN)" \
+            --body "$(cat /tmp/diag.md)" \
+            || echo "::warning::could not create diagnostics issue (workflow token may be read-only)"
+
+      - name: Assert the V15 guarantees hold
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          # A customer can never carry a staff role...
+          psql -h localhost -U postgres -d banque_assistant -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO clients (email, mot_de_passe, role) VALUES ('x@test.tn', 'x', 'SUPER_ADMIN')" \
+            && { echo '::error::a client accepted a staff role'; exit 1; } || echo "clients reject staff roles"
+          # ...and a role that is not a staff role must be the client marker.
+          psql -h localhost -U postgres -d banque_assistant -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO admin_roles (code, name, is_system, is_staff, active) VALUES ('CLIENT_X', 'x', false, false, true)" \
+            && { echo '::error::a non-staff role was created'; exit 1; } || echo "non-staff roles are limited to UTILISATEUR"
+
+  backend:
+    name: Backend (Spring Boot)
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true'
+      || needs.changes.outputs.workflow == 'true'
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Lint Spring config YAML (duplicate keys break startup)
+        run: |
+          pip install -q pyyaml
+          python3 ../scripts/check_yaml_dupes.py src/main/resources/*.yml src/test/resources/*.yml ../docker-compose*.yml
+      - name: Build (compile + tests)
+        run: |
+          set +e
+          mvn -B -ntp clean verify > /tmp/backend.log 2>&1
+          rc=$?
+          tail -n 200 /tmp/backend.log
+          exit $rc
+      - name: Assert Flyway auto-config is packaged (Boot 4 needs the starter)
+        run: unzip -l target/*.jar | grep -q 'spring-boot-flyway-' || { echo '::error::spring-boot-flyway missing from the JAR — schema would never be migrated'; exit 1; }
+      - name: Upload JAR
+        # Best-effort: the jar is a convenience download, the assertions above
+        # are the gate. Artifact uploads also start failing once the repo's
+        # artifact storage quota is full, which must not turn a green build red.
+        if: success()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/*.jar
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish diagnostics (failure)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          REF: ${{ github.ref }}
+        run: |
+          echo "## CI diagnostics — backend job (run ${RUN}, $REF)" > /tmp/diag.md
+          echo "" >> /tmp/diag.md
+          echo '```' >> /tmp/diag.md
+          tail -n 200 /tmp/backend.log >> /tmp/diag.md 2>/dev/null
+          echo '```' >> /tmp/diag.md
+          gh issue create --repo "$REPO" --title "CI FAIL backend $REF (run $RUN)" \
+            --body "$(cat /tmp/diag.md)" \
+            || echo "::warning::could not create diagnostics issue (workflow token may be read-only)"
+
+  # ----------------------------------------------------------
+  frontend:
+    name: Frontend (Angular)
+    needs: changes
+    if: >-
+      needs.changes.outputs.frontend == 'true'
+      || needs.changes.outputs.workflow == 'true'
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Build frontend container and verify served version metadata
+        run: |
+          docker build --build-arg GIT_SHA=ci-check --build-arg BUILD_TIME=ci-check \
+            --tag bank-assistant-frontend:ci .
+          docker run --rm --entrypoint sh bank-assistant-frontend:ci -c \
+            'test -s /usr/share/nginx/html/version.json && grep -Fq "\"sha\":\"ci-check\"" /usr/share/nginx/html/version.json'
+      - name: Unit tests
+        # Hard gate since 7.1: specs + Vitest coverage thresholds must pass.
+        run: npm test -- --watch=false
+      - name: Upload build output
+        # Best-effort, like the backend jar: never fail a verified build over it.
+        if: success()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish diagnostics (failure)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_id }}
+          REF: ${{ github.ref }}
+        run: |
+          echo "## CI diagnostics — frontend job (run ${RUN}, $REF)" > /tmp/diag.md
+          echo "" >> /tmp/diag.md
+          echo 'frontend failure — see the job log for details.' >> /tmp/diag.md
+          gh issue create --repo "$REPO" --title "CI FAIL frontend $REF (run $RUN)" \
+            --body "$(cat /tmp/diag.md)" \
+            || echo "::warning::could not create diagnostics issue (workflow token may be read-only)"
+
+  # ----------------------------------------------------------
+  # SonarQube / SonarCloud — OPTIONAL, never a gate.
+  #
+  # Sonar needs a server and a token, neither of which belongs in a repository.
+  # The job therefore skips itself with a notice when SONAR_TOKEN is absent, so a
+  # fork or a fresh clone is not red because of a dashboard. Set both repository
+  # secrets to enable it (Settings → Secrets and variables → Actions):
+  #
+  #   SONAR_TOKEN     a project analysis token
+  #   SONAR_HOST_URL  https://sonarcloud.io, or http://<your-server>:9000
+  #
+  # Coverage is produced here rather than reused: the scan reads JaCoCo XML and
+  # lcov, and running the tests again is the only way to be sure they describe
+  # *this* commit. docs/SONAR.md explains the whole setup.
+  sonar:
+    name: SonarQube (optional)
+    needs: changes
+    if: >-
+      needs.changes.outputs.backend == 'true'
+      || needs.changes.outputs.frontend == 'true'
+      || needs.changes.outputs.workflow == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Sonar needs the git history for blame and new-code detection
+
+      - name: Is a Sonar server configured?
+        id: gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ] && [ -n "$SONAR_HOST_URL" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Scanning $SONAR_HOST_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=SonarQube skipped::SONAR_TOKEN / SONAR_HOST_URL are not set. See docs/SONAR.md."
+            echo "**SonarQube skipped** — \`SONAR_TOKEN\` and \`SONAR_HOST_URL\` are not configured." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Set up JDK 21
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Backend build + tests + JaCoCo XML
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: backend
+        run: mvn -B -ntp clean verify
+
+      - name: Set up Node 22
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend tests + lcov
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test -- --watch=false
+          ../scripts/lcov-rebase.sh
+
+      - name: Scan
+        if: steps.gate.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

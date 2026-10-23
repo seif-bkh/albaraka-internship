@@ -1,0 +1,171 @@
+<div class="page-header">
+  <div>
+    <h2>Santé &amp; diagnostic</h2>
+    <p class="muted">Moteur RAG — où l'assistant va chercher ses réponses, et s'il répond.</p>
+  </div>
+  <div class="actions">
+    <button class="btn-secondary" type="button" (click)="load()" [disabled]="loading">Actualiser</button>
+    <button class="btn-primary" type="button" (click)="probe()"
+            [disabled]="probing || !endpoint?.configured">
+      {{ probing ? 'Test en cours…' : 'Tester la connexion' }}
+    </button>
+  </div>
+</div>
+
+<div class="alert error" *ngIf="errorMessage">
+  <span>{{ errorMessage }}</span>
+</div>
+
+<!-- ---------------------------------------------------------------- connexion -->
+<div class="card">
+  <div class="card-head">
+    <h3>Connexion au service RAG</h3>
+    <span class="badge" [ngClass]="statusBadge()">{{ statusLabel() }}</span>
+  </div>
+
+  <div class="kv-grid">
+    <div class="kv">
+      <span class="kv-label">Adresse utilisée</span>
+      <span class="kv-value mono">{{ endpoint?.url || '—' }}</span>
+    </div>
+    <div class="kv">
+      <span class="kv-label">Cible</span>
+      <span class="kv-value mono">{{ endpoint?.hostPort || '—' }}</span>
+    </div>
+    <div class="kv">
+      <span class="kv-label">Origine</span>
+      <span class="kv-value">
+        <span class="badge" [ngClass]="sourceBadge(endpoint?.source)">{{ sourceLabel(endpoint?.source) }}</span>
+      </span>
+    </div>
+    <div class="kv" *ngIf="endpoint?.updatedBy">
+      <span class="kv-label">Dernière modification</span>
+      <span class="kv-value">
+        {{ endpoint?.updatedBy }} · {{ endpoint?.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+      </span>
+    </div>
+    <div class="kv" *ngIf="endpoint?.deployedUrl && endpoint?.source === 'DATABASE'">
+      <span class="kv-label">Valeur déployée</span>
+      <span class="kv-value mono">{{ endpoint?.deployedUrl }}</span>
+    </div>
+  </div>
+
+  <p class="verdict">{{ verdict() }}</p>
+
+  <div class="toolbar">
+    <button class="btn-secondary" type="button" *ngIf="canEdit && !editing" (click)="startEdit()">
+      Modifier l'adresse
+    </button>
+    <button class="btn-secondary" type="button"
+            *ngIf="canEdit && endpoint?.source === 'DATABASE'" (click)="clear()">
+      Revenir à la valeur déployée
+    </button>
+    <span class="muted" *ngIf="!canEdit">
+      La modification de l’adresse du service requiert RAGLab Gérer entièrement.
+    </span>
+  </div>
+
+  <div class="edit-form" *ngIf="editing && canEdit">
+    <div class="form-group">
+      <label for="agentUrl">Adresse du service (ip:port)</label>
+      <input id="agentUrl" name="agentUrl" type="text" class="form-control mono"
+             placeholder="http://10.20.30.40:8000" [(ngModel)]="form.url" [disabled]="saving">
+      <small>Schéma http:// ou https://, hôte et port, sans barre oblique finale.</small>
+    </div>
+    <div class="form-group">
+      <label for="agentReason">Motif</label>
+      <input id="agentReason" name="agentReason" type="text" class="form-control"
+             placeholder="bascule vers le service RAGLab de production"
+             [(ngModel)]="form.reason" [disabled]="saving">
+      <small>Journalisé avec votre nom : c'est la trace de qui a changé quoi, et pourquoi.</small>
+    </div>
+    <p class="form-error" *ngIf="formError">{{ formError }}</p>
+    <div class="toolbar">
+      <button class="btn-primary" type="button" (click)="save()" [disabled]="saving">
+        {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+      <button class="btn-secondary" type="button" (click)="cancelEdit()" [disabled]="saving">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ------------------------------------------------------------- diagnostic -->
+<div class="card">
+  <div class="card-head">
+    <h3>Dernier test</h3>
+    <button class="btn-secondary" type="button" *ngIf="diagnostics?.health" (click)="showRaw = !showRaw">
+      {{ showRaw ? 'Masquer la réponse brute' : 'Voir la réponse brute' }}
+    </button>
+  </div>
+
+  <p class="muted" *ngIf="!diagnostics">
+    Lancez le test de connexion : l'assistant appelle <span class="mono">/health</span> du service
+    et affiche la réponse telle quelle.
+  </p>
+
+  <div class="kv-grid" *ngIf="diagnostics">
+    <div class="kv">
+      <span class="kv-label">Résultat</span>
+      <span class="kv-value">
+        <span class="badge" [ngClass]="diagnostics.reachable ? 'success' : 'error'">
+          {{ diagnostics.reachable ? 'joignable' : 'injoignable' }}
+        </span>
+      </span>
+    </div>
+    <div class="kv">
+      <span class="kv-label">Latence</span>
+      <span class="kv-value">{{ diagnostics.latencyMs }} ms</span>
+    </div>
+    <div class="kv" *ngIf="diagnostics.httpStatus">
+      <span class="kv-label">Statut HTTP</span>
+      <span class="kv-value">{{ diagnostics.httpStatus }}</span>
+    </div>
+    <div class="kv" *ngIf="diagnostics.errorReason">
+      <span class="kv-label">Motif</span>
+      <span class="kv-value mono">{{ diagnostics.errorReason }}</span>
+    </div>
+  </div>
+
+  <p class="form-error" *ngIf="diagnostics?.error">{{ diagnostics?.error }}</p>
+
+  <pre class="raw" *ngIf="showRaw && diagnostics?.health">{{ rawHealth() }}</pre>
+</div>
+
+<!-- ---------------------------------------------------------------- journal -->
+<div class="card flush">
+  <div class="card-head">
+    <h3>Journal des actions</h3>
+    <span class="muted">{{ audit.length }} entrée(s) — 100 plus récentes</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Action</th>
+          <th>Cible</th>
+          <th>Motif</th>
+          <th>Par</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of audit; trackBy: trackById">
+          <td class="muted">{{ entry.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td><span class="badge neutral plain">{{ entry.action }}</span></td>
+          <td class="mono">{{ entry.target || '—' }}</td>
+          <td>{{ entry.reason || '—' }}</td>
+          <td>{{ entry.actor || '—' }}</td>
+        </tr>
+        <tr *ngIf="!audit.length">
+          <td colspan="5">
+            <div class="empty-state">
+              <strong>Aucune action enregistrée</strong>
+              <span>Les changements d'adresse, de moteur, de clés et les reconstructions d'index
+                apparaîtront ici.</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

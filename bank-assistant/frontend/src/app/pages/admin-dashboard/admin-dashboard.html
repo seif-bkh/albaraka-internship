@@ -1,0 +1,59 @@
+<div class="page-header">
+  <div>
+    <h2>Tableau de bord</h2>
+    <p class="subtitle">Vue d'ensemble de l'activité de l'assistant et de l'état de la base documentaire.</p>
+  </div>
+  <div class="page-actions">
+    <a routerLink="/admin/monitoring" class="btn-secondary">Monitoring du chat</a>
+    <a routerLink="/admin/raglab/documents" class="btn-primary">Documents (RAGLab)</a>
+  </div>
+</div>
+
+<div *ngIf="loading" class="loading-state"><span class="spinner"></span> Chargement du tableau de bord…</div>
+
+<ng-container *ngIf="!loading">
+  <div class="kpi-grid">
+    <div class="card kpi">
+      <div class="kpi-label">Conversations</div>
+      <div class="kpi-value">{{ stats?.totalConversations || 0 }}</div>
+      <div class="kpi-sub">{{ stats?.totalClients || 0 }} clients uniques</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Messages échangés</div>
+      <div class="kpi-value">{{ stats?.totalMessages || 0 }}</div>
+      <div class="kpi-sub">30 derniers jours</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Documents indexés</div>
+      <div class="kpi-value">{{ stats?.indexedDocuments || 0 }}<span class="kpi-denom"> / {{ stats?.totalDocuments || 0 }}</span></div>
+      <div class="kpi-sub" [class.negative]="(stats?.totalDocuments || 0) > (stats?.indexedDocuments || 0)">
+        {{ (stats?.totalDocuments || 0) - (stats?.indexedDocuments || 0) }} en attente ou en erreur
+      </div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Utilisateurs actifs</div>
+      <div class="kpi-value">{{ stats?.activeUsers || 0 }}<span class="kpi-denom"> / {{ stats?.totalUsers || 0 }}</span></div>
+      <div class="kpi-sub">comptes administrateurs</div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <div class="card chart-card">
+      <div class="card-head">
+        <h3>Conversations par jour</h3>
+        <span class="muted small">30 derniers jours</span>
+      </div>
+      <div class="chart" *ngIf="stats?.parJour?.length">
+        <div class="bar-wrap" *ngFor="let jour of stats?.parJour; let i = index" [title]="jour.jour + ' : ' + jour.count + ' conversation(s)'">
+          <div class="bar" [style.height]="getBarHeight(jour.count)" [class.active]="i === stats!.parJour!.length - 1"></div>
+        </div>
+      </div>
+      <div class="chart-axis" *ngIf="stats?.parJour?.length">
+        <span>{{ stats!.parJour![0].jour | date:'d MMM' }}</span>
+        <span>{{ stats!.parJour![stats!.parJour!.length - 1].jour | date:'d MMM' }}</span>
+      </div>
+      <div class="empty-state" *ngIf="!stats?.parJour?.length"><strong>Pas encore de données</strong>Le graphe apparaîtra après les premiers échanges.</div>
+    </div>
+
+  </div>
+</ng-container>

@@ -1,0 +1,101 @@
+<div class="assistant-page" [attr.dir]="dir">
+  <!-- Barre latérale des conversations -->
+  <aside class="conv-sidebar" [class.open]="sidebarOpen">
+    <button type="button" class="new-chat" (click)="newConversation()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      {{ 'passistant.newChat' | translate }}
+    </button>
+
+    <div class="conv-section">{{ 'passistant.history' | translate }}</div>
+    <div class="conv-list">
+      <button type="button" class="conv-item" *ngFor="let c of conversations"
+              [class.active]="activeConvId === c.id" (click)="openConversation(c)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="conv-text">
+          <span class="conv-title">{{ c.titre || c.sessionId }}</span>
+          <span class="conv-meta">{{ c.nombreMessages }} {{ 'passistant.messages' | translate }}</span>
+        </span>
+      </button>
+      <p class="conv-empty" *ngIf="conversations.length === 0">{{ 'passistant.historyEmpty' | translate }}</p>
+    </div>
+  </aside>
+  <div class="sidebar-scrim" *ngIf="sidebarOpen" (click)="sidebarOpen = false"></div>
+
+  <!-- Fil de discussion -->
+  <main class="thread-pane">
+    <header class="thread-head">
+      <button type="button" class="burger" (click)="sidebarOpen = !sidebarOpen" aria-label="Historique">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="thread-title">
+        <strong>{{ 'passistant.title' | translate }}</strong>
+        <span class="thread-badge">
+          <span class="badge-dot"></span>
+          {{ 'passistant.badge' | translate }}
+        </span>
+      </div>
+      <div class="quota" *ngIf="nombreMessages > 0" [title]="nombreMessages + '/' + messagesLimite">
+        <div class="quota-bar"><div class="quota-fill" [style.width.%]="(nombreMessages / messagesLimite) * 100"></div></div>
+        <span>{{ nombreMessages }}/{{ messagesLimite }}</span>
+      </div>
+    </header>
+
+    <div class="thread-scroll" #thread>
+      <div class="thread-inner">
+        <!-- État d'accueil -->
+        <div class="hero-state" *ngIf="messages.length <= 1 && !streaming">
+          <span class="hero-mark"><img src="/albaraka.png" alt=""></span>
+          <h1>{{ 'passistant.welcome' | translate }}{{ firstName ? ' ' + firstName : '' }}{{ 'passistant.welcomeName' | translate }}</h1>
+          <p>{{ 'passistant.emptyHint' | translate }}</p>
+          <div class="suggestions">
+            <button type="button" *ngFor="let k of suggestions" (click)="askSuggestion(k)">{{ k | translate }}</button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="msg" *ngFor="let m of messages" [ngClass]="m.role">
+          <ng-container *ngIf="m.role === 'user'">
+            <div class="user-row">
+              <div class="user-bubble">{{ m.content }}</div>
+              <span class="user-avatar">{{ 'passistant.you' | translate }}</span>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="m.role === 'assistant'">
+            <div class="assistant-row">
+              <span class="assistant-mark"><img src="/albaraka.png" alt=""></span>
+              <div class="assistant-content">
+                <span class="txt" [innerHTML]="m.content"></span>
+                <span class="not-grounded" *ngIf="m.grounded === false && !m.streaming">{{ 'chat.notGrounded' | translate }}</span>
+              </div>
+            </div>
+          </ng-container>
+
+          <span *ngIf="m.role === 'system'" class="system">{{ m.content }}</span>
+        </div>
+
+        <div class="assistant-row typing" *ngIf="currentEmpty">
+          <span class="assistant-mark"><img src="/albaraka.png" alt=""></span>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="composer-wrap">
+      <div class="composer">
+        <textarea rows="1" [ngModel]="draft" (ngModelChange)="draft = $event" (keydown)="onKeydown($event)"
+                  [placeholder]="('passistant.placeholder' | translate)" [disabled]="limitReached"></textarea>
+        <button type="button" class="send" *ngIf="!streaming" (click)="send()" [disabled]="!draft.trim() || limitReached"
+                [attr.aria-label]="'chat.send' | translate">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+        <button type="button" class="send stop" *ngIf="streaming" (click)="stop()" [attr.aria-label]="'chat.stopBtn' | translate">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+      </div>
+      <p class="hint">{{ 'chat.warning' | translate }} · {{ 'chat.hint' | translate }}</p>
+    </footer>
+  </main>
+</div>

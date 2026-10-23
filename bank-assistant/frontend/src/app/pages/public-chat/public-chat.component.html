@@ -1,0 +1,155 @@
+<div class="public-layout" [attr.dir]="currentLang === 'ar' ? 'rtl' : 'ltr'">
+  <app-sidebar (sessionSelected)="onSessionSelected($event)"></app-sidebar>
+
+  <main class="main-content">
+    <div class="chat-container">
+      <header class="chat-header">
+        <div class="title-group">
+          <div class="bot-mark"><img src="/logo.png" alt=""></div>
+          <div>
+            <h2>{{ 'app.name' | translate }}</h2>
+            <p class="chat-subtitle">{{ 'chat.subtitle' | translate }}</p>
+          </div>
+        </div>
+        <div class="controls">
+          <div class="tokens-progress" [title]="tokensConsommes + ' / ' + tokensLimite + ' ' + ('chat.tokens' | translate)">
+            <span class="tokens-text">{{ nombreMessages }}/{{ messagesLimite }} {{ 'chat.msg' | translate }}</span>
+            <div class="progress-bar"><div class="progress-fill" [style.width.%]="(tokensConsommes / tokensLimite) * 100"></div></div>
+          </div>
+          <div class="lang-switch" role="tablist">
+            <button type="button" *ngFor="let l of ['fr','ar','en']" [class.on]="currentLang === l" (click)="currentLang = l; onLangChange(l)">{{ l | uppercase }}</button>
+          </div>
+          <ng-container *ngIf="currentUser">
+            <span class="user-chip" [title]="currentUser.email">{{ currentUser.email }}</span>
+            <button class="btn-ghost btn-sm" (click)="logout()">{{ 'chat.logout' | translate }}</button>
+          </ng-container>
+          <ng-container *ngIf="!currentUser">
+            <button class="btn-secondary btn-sm" (click)="openAuthModal(true)">{{ 'auth.login' | translate }}</button>
+            <button class="btn-primary btn-sm" (click)="openAuthModal(false)">{{ 'auth.signup' | translate }}</button>
+          </ng-container>
+        </div>
+      </header>
+
+      <div class="warning-banner">
+        <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        {{ 'chat.warning' | translate }}
+      </div>
+
+      <div class="messages-area" #messagesContainer [class.rtl]="currentLang === 'ar'">
+        <div class="message" *ngFor="let msg of messages" [ngClass]="[msg.role, msg.streaming ? 'streaming' : '']">
+          <ng-container *ngIf="msg.role !== 'system'">
+            <div class="avatar bot-avatar" *ngIf="msg.role === 'assistant'"><img src="/logo.png" alt=""></div>
+            <div class="message-content">
+              <div class="text" [innerHTML]="msg.content"></div>
+              <div class="not-grounded" *ngIf="msg.role === 'assistant' && msg.grounded === false && !msg.streaming">
+                {{ 'chat.notGrounded' | translate }}
+              </div>
+              <div class="meta">{{ msg.time }}<span *ngIf="msg.tokens"> · ~{{ msg.tokens }} {{ 'chat.tokens' | translate }}</span></div>
+            </div>
+          </ng-container>
+          <div *ngIf="msg.role === 'system'" class="system-msg-content" [innerHTML]="msg.content"></div>
+        </div>
+
+        <div class="suggestions" *ngIf="messages.length <= 1 && !isLoading && !isStreaming">
+          <span class="suggestions-title">{{ 'chat.suggestionsTitle' | translate }}</span>
+          <div class="suggestion-list">
+            <button type="button" *ngFor="let k of ['chat.s1','chat.s2','chat.s3']" (click)="askSuggestion(k)">{{ k | translate }}</button>
+          </div>
+        </div>
+
+        <div class="message assistant typing" *ngIf="isLoading && !isStreaming">
+          <div class="avatar bot-avatar"><img src="/logo.png" alt=""></div>
+          <div class="message-content">
+            <div class="typing-indicator"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area" [class.rtl]="currentLang === 'ar'">
+        <div class="composer" [class.disabled]="isLoading || isStreaming || isLimitReached">
+          <textarea
+            [(ngModel)]="newMessage"
+            [disabled]="isLoading || isStreaming || isLimitReached"
+            [placeholder]="'chat.inputPlaceholder' | translate"
+            (keydown.enter)="sendMessage($event)"
+            maxlength="2000"
+            rows="1"></textarea>
+          <button *ngIf="!isLoading && !isStreaming" class="send-btn" [disabled]="isLimitReached || !newMessage.trim()" (click)="sendMessage()" [attr.aria-label]="'chat.send' | translate">
+            <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+          </button>
+          <button *ngIf="isLoading || isStreaming" class="send-btn stop-mode" (click)="stopGeneration()" [attr.aria-label]="'chat.stopBtn' | translate">
+            <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">{{ 'chat.hint' | translate }}</div>
+      </div>
+      <div class="limit-message" *ngIf="isLimitReached">{{ 'chat.limitReached' | translate }}</div>
+    </div>
+  </main>
+
+  <aside class="right-panel">
+    <section class="panel-card">
+      <h3>{{ 'right.helpTitle' | translate }}</h3>
+      <p>{{ 'right.helpText' | translate }}</p>
+      <button class="btn-primary w-100">{{ 'right.appointmentCta' | translate }}</button>
+    </section>
+
+    <section class="panel-card">
+      <h3>{{ 'right.prayerTimes' | translate }}</h3>
+      <ul class="prayer-list">
+        <li><span>Al Fajr</span><strong>05:48</strong></li>
+        <li><span>Al Dhuhr</span><strong>12:33</strong></li>
+        <li><span>Al Asr</span><strong>16:05</strong></li>
+        <li><span>Al Maghrib</span><strong>18:57</strong></li>
+        <li><span>Al Isha</span><strong>19:13</strong></li>
+      </ul>
+    </section>
+
+    <section class="panel-card muted-card">
+      <h3>{{ 'right.disclaimerTitle' | translate }}</h3>
+      <p>{{ 'right.disclaimerText' | translate }}</p>
+    </section>
+  </aside>
+</div>
+
+<!-- Modal Auth -->
+<div class="modal-overlay" [attr.dir]="currentLang === 'ar' ? 'rtl' : 'ltr'" *ngIf="showAuthModal" (click)="closeAuthModal()">
+  <div class="auth-modal" (click)="$event.stopPropagation()">
+    <button class="btn-icon close-btn" (click)="closeAuthModal()" aria-label="Fermer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+
+    <h2>{{ isLoginMode ? ('auth.connexion' | translate) : ('auth.inscription' | translate) }}</h2>
+
+    <div *ngIf="authError" class="alert" [ngClass]="{ 'success': authSuccess, 'error': !authSuccess }">{{ authError }}</div>
+
+    <form (ngSubmit)="submitAuth()">
+      <ng-container *ngIf="!isLoginMode">
+        <div class="form-group">
+          <label>{{ 'auth.prenom' | translate }}</label>
+          <input class="form-control" type="text" name="prenom" [(ngModel)]="authForm.prenom" required>
+        </div>
+        <div class="form-group">
+          <label>{{ 'auth.nom' | translate }}</label>
+          <input class="form-control" type="text" name="nom" [(ngModel)]="authForm.nom" required>
+        </div>
+      </ng-container>
+      <div class="form-group">
+        <label>{{ 'auth.email' | translate }}</label>
+        <input class="form-control" type="email" name="email" [(ngModel)]="authForm.email" required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>{{ 'auth.password' | translate }}</label>
+        <input class="form-control" type="password" name="motDePasse" [(ngModel)]="authForm.motDePasse" required [attr.autocomplete]="isLoginMode ? 'current-password' : 'new-password'">
+      </div>
+      <button type="submit" class="btn-primary w-100 submit-btn">{{ isLoginMode ? ('auth.login' | translate) : ('auth.signup' | translate) }}</button>
+    </form>
+
+    <p class="toggle-mode">
+      {{ isLoginMode ? ('auth.noAccount' | translate) : ('auth.hasAccount' | translate) }}
+      <a href="javascript:void(0)" (click)="isLoginMode = !isLoginMode; authError=''; authSuccess=false">
+        {{ isLoginMode ? ('auth.signup' | translate) : ('auth.login' | translate) }}
+      </a>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,228 @@
+/* Bouton flottant — ancre bas-droite (bas-gauche en RTL via inset-inline). */
+.fab {
+  position: fixed;
+  bottom: 26px;
+  inset-inline-end: 26px;
+  z-index: 90;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--brand-gradient, linear-gradient(135deg, #f5881c, #e0122f));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 16px 34px -12px rgba(224, 18, 47, 0.65);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.fab:hover { transform: translateY(-3px) scale(1.04); }
+.fab svg { width: 26px; height: 26px; grid-area: 1 / 1; transition: opacity .18s ease, transform .18s ease; }
+.fab .ico-close { opacity: 0; transform: rotate(-90deg) scale(.6); }
+.fab.open .ico-chat { opacity: 0; transform: rotate(90deg) scale(.6); }
+.fab.open .ico-close { opacity: 1; transform: rotate(0) scale(1); }
+.fab-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(224, 18, 47, 0.55);
+  animation: fabPulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+.fab.open .fab-ring { animation: none; opacity: 0; }
+@keyframes fabPulse {
+  0% { transform: scale(1); opacity: 1; }
+  70%, 100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* Panneau
+   Une boîte de taille fixe — 420×620 sur desktop, ce qui laisse ~380px de fil
+   de messages, soit quatorze lignes de 16px/1.6 : une réponse type y tient en
+   entier et s'il n'y a rien à faire défiler, il n'y a rien à défiler.
+   Les max-* ne sont pas là pour redimensionner le widget mais pour qu'il ne
+   dépasse jamais une fenêtre plus courte que lui ; dans ce cas c'est le fil
+   qui défile, jamais la bulle. */
+.panel {
+  /* Hauteur réservée en haut de l'écran mobile (bandeau de l'application). */
+  --widget-mobile-topbar: 80px;
+  /* Les deux seuls réglages typographiques du panneau, déclarés une fois. */
+  --widget-font-size: 16px;
+  --widget-bubble-max: 90%;
+  position: fixed;
+  bottom: 102px;
+  inset-inline-end: 26px;
+  z-index: 95;
+  width: 420px;
+  height: 620px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 120px);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 32px 80px -20px rgba(16, 20, 24, 0.4);
+  border: 1px solid var(--border, #e3e6eb);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: panelIn .22s ease;
+  font-size: var(--widget-font-size, 16px);
+  line-height: 1.6;
+  overscroll-behavior: contain;
+}
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* En-tête */
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  background: var(--brand-gradient, linear-gradient(135deg, #f5881c, #e0122f));
+  color: #fff;
+  flex: none;
+}
+.head-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(255,255,255,.92);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.head-avatar img { width: 30px; height: 30px; object-fit: contain; }
+.head-titles { min-width: 0; flex: 1; }
+.head-titles strong { display: block; font-size: 15px; line-height: 1.25; }
+.head-titles small { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; opacity: .9; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #b7f5c9; box-shadow: 0 0 0 3px rgba(255,255,255,.22); }
+.head-langs { display: inline-flex; background: rgba(255,255,255,.18); border-radius: 999px; padding: 2px; flex: none; }
+.head-langs button {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fff;
+  padding: 4px 9px;
+  border-radius: 999px;
+  opacity: .8;
+}
+.head-langs button.on { background: #fff; color: var(--brand, #e0122f); opacity: 1; }
+.head-close { flex: none; width: 30px; height: 30px; border-radius: 8px; color: #fff; display: grid; place-items: center; }
+.head-close:hover { background: rgba(255,255,255,.16); }
+.head-close svg { width: 16px; height: 16px; }
+
+/* Fil de messages */
+.panel-body {
+  flex: 1;
+  /* Le conteneur scrolle ; la bulle, elle, grandit. Un max-height ou un
+     overflow-y sur .bubble créerait un second ascenseur dans le texte. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #f7f6f4;
+}
+.msg { display: flex; flex-direction: column; max-width: var(--widget-bubble-max, 90%); min-width: 0; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.assistant { align-self: flex-start; align-items: flex-start; }
+.msg.system { align-self: center; max-width: 100%; }
+.bubble {
+  padding: 12px 16px;
+  border-radius: 18px;
+  line-height: 1.6;
+  font-size: var(--widget-font-size, 16px);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  /* Auto-grow: no fixed height, no inner scroll, ever. */
+  height: auto;
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
+  box-sizing: border-box;
+}
+.bubble .txt { display: block; }
+.bubble .txt ::selection { background: rgba(224, 18, 47, .16); }
+.msg.user .bubble { background: var(--brand-gradient, linear-gradient(135deg, #f5881c, #e0122f)); color: #fff; border-end-end-radius: 5px; }
+.msg.assistant .bubble { background: #fff; color: var(--text, #16181d); border: 1px solid var(--border, #e3e6eb); border-end-start-radius: 5px; }
+.meta { font-size: 11px; color: var(--text-3, #8a93a3); margin-top: 4px; padding-inline: 4px; }
+.system {
+  font-size: 12px;
+  color: var(--text-3, #8a93a3);
+  background: var(--neutral-soft, #eef0f3);
+  border-radius: 999px;
+  padding: 5px 14px;
+  text-align: center;
+}
+
+.not-grounded {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--warn, #b3600a);
+  background: var(--warn-soft, #fdf1e2);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.typing { display: inline-flex; gap: 4px; padding: 12px 14px; background: #fff; border-radius: 16px; border-end-start-radius: 5px; align-self: flex-start; border: 1px solid var(--border, #e3e6eb); }
+.typing span { width: 6px; height: 6px; border-radius: 50%; background: #c8c4bd; animation: typing 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay: .15s; }
+.typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes typing { 0%,60%,100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+/* Pied : quota + composer */
+.panel-foot { flex: none; border-top: 1px solid var(--border, #e3e6eb); background: #fff; padding: 10px 14px 12px; }
+.quota { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.quota-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--neutral-soft, #eef0f3); overflow: hidden; }
+.quota-fill { height: 100%; border-radius: 999px; background: var(--brand-gradient, linear-gradient(90deg, #f5881c, #e0122f)); transition: width .3s ease; }
+.quota span { font-size: 11px; color: var(--text-3, #8a93a3); font-weight: 600; font-variant-numeric: tabular-nums; }
+.composer { display: flex; align-items: flex-end; gap: 8px; background: var(--bg-light, #f4f5f7); border: 1px solid var(--border, #e3e6eb); border-radius: 14px; padding: 7px 7px 7px 13px; }
+.composer:focus-within { border-color: var(--brand, #e0122f); box-shadow: var(--ring, 0 0 0 3px rgba(224,18,47,.14)); }
+.composer textarea {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  resize: none;
+  outline: none;
+  max-height: 96px;
+  font-size: var(--widget-font-size, 16px);
+  line-height: 1.5;
+  padding: 4px 0;
+}
+.send {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-gradient, linear-gradient(135deg, #f5881c, #e0122f));
+  color: #fff;
+  display: grid;
+  place-items: center;
+  transition: filter .15s ease, transform .15s ease;
+}
+.send:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.send:disabled { opacity: .45; }
+.send svg { width: 17px; height: 17px; }
+.send.stop { background: var(--ink, #101418); }
+.disclaimer { margin: 7px 2px 0; font-size: 11px; color: var(--text-3, #8a93a3); text-align: center; }
+
+@media (max-width: 640px) {
+  .panel {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(100vh - var(--widget-mobile-topbar, 80px));
+    max-width: 100%;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+  }
+  /* 100dvh only where it exists: on a phone the URL bar makes 100vh a lie,
+     and a panel taller than the viewport is a panel with a hidden composer. */
+  @supports (height: 100dvh) {
+    .panel { height: calc(100dvh - var(--widget-mobile-topbar, 80px)); }
+  }
+  .fab { bottom: 18px; inset-inline-end: 18px; }
+}

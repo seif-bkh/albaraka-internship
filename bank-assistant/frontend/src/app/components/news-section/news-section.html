@@ -1,0 +1,13 @@
+<section class="news" *ngIf="items.length > 0" aria-label="{{ 'news.title' | translate }}">
+  <h3 class="news-title">{{ 'news.title' | translate }}</h3>
+  <ul class="news-list">
+    <li *ngFor="let n of items" class="news-item">
+      <span class="news-date">{{ n.publishedAt | date:'dd MMM yyyy':'':'fr' }}</span>
+      <h4 class="news-headline">{{ n.title }}</h4>
+      <p class="news-body">{{ n.body }}</p>
+      <a *ngIf="n.externalLink" [href]="n.externalLink" target="_blank" rel="noopener" class="news-link">
+        {{ 'news.more' | translate }}
+      </a>
+    </li>
+  </ul>
+</section>

@@ -1,0 +1,108 @@
+# ============================================================
+# Al Baraka Bank Assistant — FULL APPLICATION TEST STACK (host machine)
+#
+# Self-contained: builds every image from this checkout, runs Postgres(pgvector),
+# the backend and the nginx frontend, then a one-shot `smoke` container runs the
+# end-to-end checks in e2e/run.sh.
+#
+# The assistant (RAGLab) is NOT part of this stack — it is an external service.
+# Point the backend at it before starting:
+#
+#   cp .env.docker.example .env      # set RAGLAB_URL (+ RAGLAB_TOKEN)
+#   docker compose -f docker-compose.test.yml up --build
+#
+#   App (chat + admin):  http://localhost:8080      admin@albaraka.tn / postgres
+#   Metrics:             http://localhost:8081/actuator/prometheus  (METRICS_PUBLIC)
+#
+# Without RAGLAB_URL the UI, auth, governance and database paths all work; a chat
+# turn is refused honestly ("assistant not configured") instead of answered.
+#
+# End-to-end smoke (login, refresh rotation, facts, chat, metrics):
+#   docker compose -f docker-compose.test.yml --profile smoke run --rm smoke
+#
+# Tear down (and wipe data):  docker compose -f docker-compose.test.yml down -v
+# ============================================================
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: banque_assistant
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d banque_assistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      BACKEND_PORT: 8081
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: banque_assistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      RAGLAB_URL: ${RAGLAB_URL:-}
+      RAGLAB_TOKEN: ${RAGLAB_TOKEN:-test-service-token}
+      # Development fixture: staff, demo accounts and customers with banking data.
+      # These two files are test stacks, so it is on; docker-compose.yml keeps it off.
+      DEV_SEED: ${DEV_SEED:-true}
+      CUSTOMER_CONTEXT_ENABLED: ${CUSTOMER_CONTEXT_ENABLED:-true}
+      JWT_SECRET: ${JWT_SECRET:-dGVzdC1zdGFjay1vbmx5LWp3dC1zZWNyZXQtbG9uZy1lbm91Z2gtZm9yLWhzMjU2LTI1Ni1iaXRz}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
+      JPA_DDL_AUTO: validate
+      METRICS_PUBLIC: "true"
+      LOG_FORMAT: ${LOG_FORMAT_BACKEND:-}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8081}:8081"
+    # A RAGLab running on this machine is reachable as host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: runs e2e/run.sh against the stack, prints ✅/❌, exits 0/1.
+  # Only started with `--profile smoke run --rm smoke` (see header).
+  smoke:
+    image: python:3.11-slim
+    working_dir: /repo
+    environment:
+      E2E_BASE_URL: http://frontend
+      E2E_METRICS_URL: http://backend:8081/actuator/prometheus
+    volumes:
+      - ./e2e:/repo/e2e:ro
+    entrypoint: ["bash", "-c", "apt-get update -qq && apt-get install -y -qq curl >/dev/null && ./e2e/run.sh"]
+    depends_on:
+      frontend: { condition: service_healthy }
+    profiles: ["smoke"]
+
+volumes:
+  test_pgdata:

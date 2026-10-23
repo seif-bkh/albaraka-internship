@@ -1,0 +1,80 @@
+.detail-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+.btn-back { margin-left: -8px; }
+.session-chip { font-size: 13px; }
+.ip-tag { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+.subtitle { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+.filters-card { margin-bottom: 16px; padding: 14px 20px; }
+.filters-row { margin: 0; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 11.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+.filter-group .form-control { width: 180px; }
+
+.pagination { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--border); }
+.pagination span { font-size: 12.5px; color: var(--text-3); }
+
+/* Fil de conversation */
+.chat-container { display: flex; flex-direction: column; gap: 24px; max-width: 860px; }
+.chat-thread { display: flex; flex-direction: column; gap: 10px; }
+.message-block { display: flex; gap: 12px; align-items: flex-start; }
+.message-avatar {
+  width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; flex-shrink: 0; overflow: hidden;
+}
+.client-avatar { background: var(--neutral-soft); color: var(--text-2); }
+.assistant-avatar { background: var(--surface); border: 1px solid var(--border); }
+.assistant-avatar img { width: 18px; height: 18px; object-fit: contain; }
+.message-content { flex: 1; min-width: 0; }
+.client-message { background: var(--surface-2); border-radius: 2px 10px 10px 10px; padding: 10px 14px; border: 1px solid var(--border); }
+.assistant-message { background: var(--surface); border-radius: 2px 10px 10px 10px; padding: 12px 14px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+.message-text { line-height: 1.6; white-space: pre-wrap; font-size: 13.5px; }
+.message-meta { display: flex; gap: 12px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.msg-time { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.reformulation-hint { font-size: 12px; color: var(--text-3); font-style: italic; }
+
+.intention-badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px; margin-bottom: 8px; background: var(--neutral-soft); color: var(--neutral); text-transform: uppercase; letter-spacing: .04em; }
+.intention-hors_perimetre, .intention-reject { background: var(--err-soft); color: var(--err); }
+.intention-salutation, .intention-greeting { background: var(--ok-soft); color: var(--ok); }
+.intention-commercial, .intention-describe, .intention-rate { background: var(--info-soft); color: var(--info); }
+
+.sources-section { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.sources-label { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+.source-tag { background: var(--surface); border: 1px solid var(--border-strong); color: var(--text-2); padding: 1px 8px; border-radius: var(--r-sm); font-size: 12px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.no-rag-badge { margin-top: 8px; font-size: 12px; color: var(--text-3); }
+
+/* Direct mode: the reviewer should not have to hit refresh to see the latest turn. */
+.header-live { display: flex; align-items: center; gap: 10px; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.live-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-3);
+  transition: color .15s, border-color .15s, background .15s;
+}
+.live-toggle.on { color: var(--ok); border-color: #a7f3d0; background: var(--ok-soft); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.live-toggle.on .live-dot { animation: livePulse 1.8s ease-out infinite; }
+@keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.45); } 70%, 100% { box-shadow: 0 0 0 6px rgba(16,185,129,0); } }
+.client-tag { font-family: var(--mono); font-size: 11.5px; color: var(--text-3); }
+
+/* Documents visited: what the customer never sees, listed for the reviewer. */
+.doc-tag {
+  display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  background: var(--ok-soft); border: 1px solid #a7f3d0; color: #065f46;
+  border-radius: var(--r-sm); padding: 1px 8px; font-size: 12px; max-width: 420px;
+}
+.doc-tag em { font-style: normal; opacity: .75; }
+.doc-tag small { font-family: var(--mono); font-size: 10.5px; opacity: .8; }
+.doc-tag.dropped { background: var(--surface-2); border-style: dashed; border-color: var(--border-strong); color: var(--text-3); }
+
+/* Per-exchange observability: identifiers, cost, latency, real timestamps. */
+.exchange-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.exchange-meta .meta-item {
+  font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums;
+  background: var(--surface-2); border-radius: 999px; padding: 1px 8px;
+}
+.exchange-meta .meta-item strong { font-weight: 600; color: var(--text-2); }
+.exchange-meta .status.in-progress { background: var(--info-soft); color: var(--info); }
+.exchange-meta .status.refused { background: var(--warn-soft); color: var(--warn); }
+.exchange-meta .status.failed { background: var(--err-soft); color: var(--err); }

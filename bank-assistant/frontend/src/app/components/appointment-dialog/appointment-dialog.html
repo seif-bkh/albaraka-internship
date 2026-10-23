@@ -1,0 +1,72 @@
+<div class="modal-backdrop" *ngIf="open" (click)="close()">
+  <div class="modal appt-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="appt-head">
+      <div>
+        <h3>{{ 'appt.title' | translate }}</h3>
+        <p class="appt-sub">{{ 'appt.subtitle' | translate }}</p>
+      </div>
+      <button type="button" class="appt-close" (click)="close()" aria-label="{{ 'appt.close' | translate }}">✕</button>
+    </div>
+
+    <!-- Success -->
+    <div class="appt-success" *ngIf="submitted">
+      <div class="appt-success-ico">✓</div>
+      <h4>{{ 'appt.success' | translate }}</h4>
+      <p>{{ 'appt.successText' | translate }}</p>
+      <button type="button" class="btn-primary" (click)="close()">{{ 'appt.close' | translate }}</button>
+    </div>
+
+    <!-- Form -->
+    <form *ngIf="!submitted" (ngSubmit)="submit()" class="appt-form">
+      <label class="appt-field">
+        <span>{{ 'appt.motif' | translate }}</span>
+        <select name="motif" [ngModel]="motif" required>
+          <option *ngFor="let m of motifs" [value]="m">{{ motifLabel(m) }}</option>
+        </select>
+      </label>
+
+      <fieldset class="appt-field">
+        <legend>{{ 'appt.method' | translate }}</legend>
+        <label class="radio">
+          <input type="radio" name="method" value="AGENCE" [ngModel]="method" />
+          {{ 'appt.method.agence' | translate }}
+        </label>
+        <label class="radio">
+          <input type="radio" name="method" value="TELEPHONE" [ngModel]="method" />
+          {{ 'appt.method.phone' | translate }}
+        </label>
+      </fieldset>
+
+      <label class="appt-field" *ngIf="method === 'AGENCE'">
+        <span>{{ 'appt.branch' | translate }}</span>
+        <input type="text" name="branch" [ngModel]="branch" [placeholder]="'appt.branchPlaceholder' | translate" maxlength="200" />
+      </label>
+
+      <div class="appt-row">
+        <label class="appt-field">
+          <span>{{ 'appt.date' | translate }}</span>
+          <input type="date" name="date" [ngModel]="date" [min]="minDate" [max]="maxDate" required />
+        </label>
+        <label class="appt-field">
+          <span>{{ 'appt.time' | translate }}</span>
+          <select name="time" [ngModel]="time">
+            <option *ngFor="let s of timeSlots" [value]="s">{{ s }}</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="appt-field">
+        <span>{{ 'appt.notes' | translate }}</span>
+        <textarea name="notes" [ngModel]="notes" rows="2" [placeholder]="'appt.notesPlaceholder' | translate" maxlength="2000"></textarea>
+      </label>
+
+      <p class="appt-error" *ngIf="error">{{ 'appt.error' | translate }}</p>
+
+      <div class="appt-actions">
+        <button type="submit" class="btn-primary" [disabled]="sending || !date">
+          {{ sending ? ('appt.sending' | translate) : ('appt.send' | translate) }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

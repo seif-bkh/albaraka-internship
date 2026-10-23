@@ -1,0 +1,427 @@
+<div class="page-header">
+  <div>
+    <h2>Monitoring & Observabilité du Chat</h2>
+    <p class="subtitle">Historique temps réel, latence, jetons, modèles et traçabilité complète des sources documentaires.</p>
+  </div>
+  <div class="header-actions">
+    <div class="view-tabs">
+      <button [class.active]="viewMode === 'live'" (click)="viewMode = 'live'">Flux temps réel</button>
+      <button [class.active]="viewMode === 'traces'" (click)="viewMode = 'traces'">Analyse détaillée & KPIs</button>
+    </div>
+    <div class="live-toggle" *ngIf="viewMode === 'live'">
+      <label class="toggle-switch">
+        <input type="checkbox" [checked]="autoRefresh" (change)="toggleAutoRefresh()" />
+        <span class="slider"></span>
+      </label>
+      <span class="live-label" [class.on]="autoRefresh">
+        <span class="live-indicator"></span> direct · {{ livePollMs / 1000 }} s
+      </span>
+    </div>
+    <button class="btn-secondary" (click)="viewMode === 'live' ? loadLiveFeed() : load()" [disabled]="loading">Actualiser</button>
+  </div>
+</div>
+
+<div *ngIf="errorMsg" class="alert error">{{ errorMsg }}</div>
+
+<!-- ────────────────────────────── VUE 1 : FLUX TEMPS RÉEL ────────────────────────────── -->
+<section class="live-feed-section" *ngIf="viewMode === 'live'">
+  <div class="live-feed-card">
+    <div class="live-feed-header">
+      <div class="feed-summary">
+        <strong>Flux des échanges en direct</strong>
+        <span class="feed-badge">{{ liveTurns.length }} récents</span>
+      </div>
+      <div class="live-feed-legend">
+        <span class="status-pill status-in-progress">⏳ En cours</span>
+        <span class="status-pill status-answered">✓ Répondu</span>
+        <span class="status-pill status-refused">✋ Refusé</span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="realtime-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Client / Session</th>
+            <th>Question</th>
+            <th>Réponse</th>
+            <th>Documents consultés</th>
+            <th>Modèle</th>
+            <th>Tokens (E/S)</th>
+            <th>Latence</th>
+            <th>Statut</th>
+            <th>Horodatages</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of liveTurns" [class.row-selected]="selectedLiveTurn?.id === t.id"
+              [class.fresh]="freshIds.has(t.id)" (click)="selectLiveTurn(t)">
+            <td class="col-id">#{{ t.id }}</td>
+            <td class="col-user">
+              <span class="user-tag" *ngIf="t.userId">User #{{ t.userId }}</span>
+              <span class="user-tag anon" *ngIf="!t.userId">Anonyme</span>
+              <code class="session-code" [title]="t.sessionId">{{ t.sessionId | slice:0:8 }}…</code>
+            </td>
+            <td class="col-q" dir="auto">
+              <div class="question-clamp" [title]="t.question">{{ t.question }}</div>
+            </td>
+            <td class="col-a" dir="auto">
+              <div class="answer-clamp" *ngIf="t.answer" [title]="t.answer">{{ t.answer }}</div>
+              <span class="in-progress-text" *ngIf="!t.answer && t.status === 'IN_PROGRESS'">Génération en cours…</span>
+            </td>
+            <td class="col-sources">
+              <!-- Le visiteur ne voit jamais ces références : c'est la colonne
+                   qui dit « sur quels documents l'assistant a travaillé ». -->
+              <div class="sources-tag-wrap" *ngIf="documentsOf(t).length">
+                <span class="src-pill" *ngFor="let d of documentsOf(t)"
+                      [title]="d.document + (d.heading ? ' — ' + d.heading : '')"
+                      [class.dropped]="d.kept === false" [class.cited]="d.cited">
+                  {{ d.document }}<em *ngIf="d.heading"> › {{ d.heading }}</em>
+                  <small *ngIf="d.similarity !== null">{{ pctScore(d.similarity) }}</small>
+                </span>
+              </div>
+              <span class="muted" *ngIf="!documentsOf(t).length">—</span>
+            </td>
+            <td class="col-model">
+              <span class="model-badge">{{ t.model || 'raglab' }}</span>
+            </td>
+            <td class="col-tokens">
+              <span class="tokens-metric">
+                <strong>{{ t.tokensIn }}</strong> in / <strong>{{ t.tokensOut }}</strong> out
+              </span>
+            </td>
+            <td class="col-latency">
+              <span class="latency-pill" [class.fast]="t.latencyMs < 1500" [class.slow]="t.latencyMs >= 4000">
+                {{ t.latencyMs }} ms
+              </span>
+            </td>
+            <td class="col-status">
+              <span class="status-pill status-in-progress" *ngIf="t.status === 'IN_PROGRESS'">⏳ En cours</span>
+              <span class="status-pill status-answered" *ngIf="t.status === 'ANSWERED'">✓ Répondu</span>
+              <span class="status-pill status-refused" *ngIf="t.status === 'REFUSED'">✋ Refusé</span>
+              <span class="status-pill status-failed" *ngIf="t.status === 'FAILED'">⚠️ Échec</span>
+            </td>
+            <td class="col-time">
+              <div class="time-asked" [title]="t.askedAt">
+                <small>Demandé :</small> {{ t.askedAt | date:'HH:mm:ss' }}
+              </div>
+              <div class="time-answered" *ngIf="t.answeredAt" [title]="t.answeredAt">
+                <small>Répondu :</small> {{ t.answeredAt | date:'HH:mm:ss' }}
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="liveTurns.length === 0">
+            <td colspan="10" class="empty-feed">Aucun échange enregistré récemment.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Live inspector drawer when row clicked -->
+    <div class="live-detail-drawer" *ngIf="selectedLiveTurn">
+      <div class="drawer-header">
+        <h4>Détails de l'échange #{{ selectedLiveTurn.id }}</h4>
+        <button type="button" class="drawer-close" (click)="selectedLiveTurn = null">✕</button>
+      </div>
+      <div class="drawer-content">
+        <div class="drawer-grid">
+          <div>
+            <label>Question complète</label>
+            <div class="drawer-box" dir="auto">{{ selectedLiveTurn.question }}</div>
+          </div>
+          <div>
+            <label>Réponse complète</label>
+            <div class="drawer-box" dir="auto">{{ selectedLiveTurn.answer || '(En cours)' }}</div>
+          </div>
+        </div>
+        <div class="drawer-meta-row">
+          <div><strong>Session :</strong> <code>{{ selectedLiveTurn.sessionId }}</code></div>
+          <div><strong>Utilisateur :</strong> {{ selectedLiveTurn.userId ? ('ID ' + selectedLiveTurn.userId) : 'Visiteur anonyme' }}</div>
+          <div><strong>Modèle :</strong> {{ selectedLiveTurn.model }}</div>
+          <div><strong>Latence :</strong> {{ selectedLiveTurn.latencyMs }} ms</div>
+          <div><strong>Demandé le :</strong> {{ selectedLiveTurn.askedAt }}</div>
+          <div><strong>Répondu le :</strong> {{ selectedLiveTurn.answeredAt || '—' }}</div>
+        </div>
+        <div class="drawer-sources" *ngIf="documentsOf(selectedLiveTurn).length">
+          <label>Documents consultés ({{ documentsOf(selectedLiveTurn).length }}) — invisibles pour l'utilisateur :</label>
+          <table class="doc-table">
+            <thead>
+              <tr><th>Document</th><th>Section</th><th>Morceau</th><th>Similarité</th><th>Rôle</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let d of documentsOf(selectedLiveTurn)">
+                <td class="mono">{{ d.document || d.title || '—' }}</td>
+                <td>{{ d.heading || '—' }}</td>
+                <td class="mono">{{ d.chunkId || '—' }}</td>
+                <td class="right">{{ pctScore(d.similarity) }}</td>
+                <td>
+                  <span class="doc-role cited" *ngIf="d.cited">utilisé par la réponse</span>
+                  <span class="doc-role dropped" *ngIf="d.kept === false">écarté par le seuil</span>
+                  <span class="doc-role retrieved" *ngIf="d.kept !== false && !d.cited">consulté</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ────────────────────────────── VUE 2 : TRACES & KPIS DÉTAILLÉS ────────────────────────────── -->
+<ng-container *ngIf="viewMode === 'traces'">
+<!-- Per-engine numbers over the recent window: two engines, side by side. -->
+<section class="kpis" *ngIf="kpis">
+  <div class="kpi-card" *ngFor="let k of kpis.engines">
+    <div class="kpi-head">
+      <strong>{{ k.label }}</strong>
+      <span class="badge neutral plain">{{ k.engine }}</span>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-value">{{ k.turns }}</span>
+      <span class="kpi-label">échanges</span>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-value">{{ pctOrDash(k.groundingRate) }}</span>
+      <span class="kpi-label">fondés ({{ k.grounded }}/{{ k.turns }})</span>
+    </div>
+    <div class="kpi-row">
+      <span class="kpi-value">{{ pctOrDash(k.sourcesRate) }}</span>
+      <span class="kpi-label">avec sources</span>
+    </div>
+    <div class="kpi-reasons" *ngIf="k.refusalReasons.length">
+      <span class="kpi-label">Refus :</span>
+      <span class="reason" *ngFor="let r of k.refusalReasons">{{ r.reason }} · {{ r.count }}</span>
+    </div>
+  </div>
+  <p class="kpis-note">
+    Sur les {{ kpis.turns }} derniers échanges (fenêtre de {{ kpis.window }}).
+  </p>
+</section>
+
+<!-- Live test -->
+<section class="card test-box">
+  <label class="test-label">Tester une question (sans compter dans les quotas ni l'historique)</label>
+  <div class="test-row">
+    <input type="text" class="form-control" [(ngModel)]="testMessage" (keyup.enter)="runTest()"
+           placeholder="ex. quels sont les horaires d'ouverture ?" [disabled]="testing" />
+    <select class="form-control" [(ngModel)]="testLanguage" [disabled]="testing">
+      <option value="auto">langue : auto</option>
+      <option value="fr">fr</option><option value="ar">ar</option><option value="en">en</option>
+    </select>
+    <button class="btn-primary" (click)="runTest()" [disabled]="testing || !testMessage.trim()">
+      {{ testing ? 'Analyse…' : 'Expliquer' }}
+    </button>
+  </div>
+</section>
+
+<div class="layout">
+  <!-- Left: recent turns -->
+  <aside class="card turns">
+    <div class="turns-head">
+      <strong>Derniers échanges</strong>
+      <div class="chips">
+        <button [class.on]="filter==='all'" (click)="filter='all'">tous</button>
+        <button [class.on]="filter==='grounded'" (click)="filter='grounded'">fondés</button>
+        <button [class.on]="filter==='refused'" (click)="filter='refused'">refus</button>
+      </div>
+    </div>
+    <div class="turns-head engine-head">
+      <strong>Moteur</strong>
+      <div class="chips">
+        <button [class.on]="engineFilter==='ALL'" (click)="setEngineFilter('ALL')">les deux</button>
+        <button [class.on]="engineFilter==='LEGACY'" (click)="setEngineFilter('LEGACY')">interne</button>
+        <button [class.on]="engineFilter==='RAGLAB'" (click)="setEngineFilter('RAGLAB')">RAGLab</button>
+      </div>
+    </div>
+    <div *ngIf="loading" class="loading-state"><span class="spinner"></span></div>
+    <div *ngIf="!loading && visibleTurns.length === 0" class="empty-state">Aucun échange.</div>
+    <button *ngFor="let t of visibleTurns" class="turn" [class.active]="selected?.id === t.id" (click)="select(t)">
+      <span class="dot" [class.ok]="t.grounded === true" [class.bad]="t.grounded === false"></span>
+      <span class="q">{{ t.question }}</span>
+      <span class="meta">
+        {{ t.dateCreation | date:'dd/MM HH:mm' }} ·
+        <span class="engine-tag" [class.raglab]="t.engine === 'RAGLAB'">
+          {{ t.engine === 'RAGLAB' ? 'RAGLab' : 'interne' }}
+        </span>
+        {{ t.domaine || '?' }}/{{ t.intention || '?' }}
+      </span>
+    </button>
+  </aside>
+
+  <!-- Right: trace -->
+  <main class="card detail" *ngIf="selected; else pick">
+    <header class="detail-head">
+      <div class="q-big">« {{ selected.question }} »</div>
+      <div class="outcome" [class.ok]="selected.grounded === true" [class.bad]="selected.grounded === false">
+        {{ outcomeLabel(selected) }}
+      </div>
+    </header>
+
+    <div class="answer" *ngIf="!isRagLabProbe()">
+      <div class="label">Réponse envoyée</div>
+      <pre>{{ answerText }}</pre>
+      <div class="sources" *ngIf="selected.sources?.length">
+        <span class="label">Sources :</span>
+        <span class="src" *ngFor="let s of selected.sources">{{ s }}</span>
+      </div>
+    </div>
+
+    <!-- RAGLab: no pipeline steps, but claims with verbatim quotes. -->
+    <div class="raglab" *ngIf="selected.engine === 'RAGLAB'">
+      <div class="raglab-head">
+        <strong>Réponse RAGLab</strong>
+        <span class="badge neutral plain" *ngIf="raglabTrace?.status">{{ raglabTrace?.status }}</span>
+        <span class="badge warning" *ngIf="raglabTrace?.reason">{{ raglabTrace?.reason }}</span>
+        <span class="badge neutral plain" *ngIf="raglabTrace?.cached">en cache</span>
+        <span class="muted" *ngIf="raglabTrace?.seconds">{{ raglabTrace?.seconds }} s côté service</span>
+      </div>
+      <p class="muted">
+        Ce moteur n'a pas de pipeline par étapes : ce qu'il faut vérifier, ce sont les affirmations
+        et l'extrait exact qui soutient chacune.
+      </p>
+
+      <div *ngIf="!raglabTrace" class="muted">Trace indisponible pour cet échange.</div>
+
+      <ul class="claims" *ngIf="raglabTrace?.claims?.length">
+        <li *ngFor="let c of raglabTrace?.claims">
+          <div class="claim-text">{{ c.text }}</div>
+          <div class="quote" *ngFor="let e of c.evidence">
+            <span class="src">{{ e.source_id }}</span>
+            <blockquote>{{ e.quote }}</blockquote>
+          </div>
+          <div class="uncited" *ngIf="!c.cited">
+            Sans citation vérifiée — prose du modèle, non contrôlée par la porte du service.
+          </div>
+        </li>
+      </ul>
+
+      <div class="raglab-warn" *ngIf="uncitedClaims() || uncitedSources().length">
+        <span *ngIf="uncitedClaims()">{{ uncitedClaims() }} affirmation(s) sans citation.</span>
+        <span *ngIf="uncitedSources().length">
+          Sources retournées mais inutilisées : {{ uncitedSources().join(', ') }}.
+        </span>
+      </div>
+
+      <div class="sources" *ngIf="raglabTrace?.sources?.length">
+        <span class="label">Sources :</span>
+        <span class="src" *ngFor="let s of raglabTrace?.sources">
+          {{ s.document }}<span class="muted" *ngIf="s.heading"> — {{ s.heading }}</span>
+        </span>
+      </div>
+    </div>
+
+    <div *ngIf="!steps.length && selected.engine !== 'RAGLAB'" class="muted" style="margin-top:1rem">
+      Pas de trace pour cet échange (antérieur à la mise en place du monitoring).
+    </div>
+
+    <!-- The probe for a RAGLab question: what retrieval returned. -->
+    <div class="probe" *ngIf="isRagLabProbe()">
+      <div class="label">Récupération pour « {{ retrievalQuestion }} »</div>
+      <p class="muted">
+        RAGLab n'expose pas de pipeline par étapes : le test montre ce que la recherche ramène.
+        Pour une réponse fondée avec ses citations, passez par
+        <a routerLink="/admin/agent/quality">Qualité des réponses</a>.
+      </p>
+      <p class="muted" *ngIf="!retrievalHits.length">
+        Aucun extrait retourné : la question n'atteint pas le corpus tel qu'il est indexé.
+      </p>
+      <ol class="hits" *ngIf="retrievalHits.length">
+        <li *ngFor="let h of retrievalHits">
+          <span class="src" *ngIf="h.score !== null && h.score !== undefined">{{ h.score | number:'1.2-3' }}</span>
+          <strong>{{ h.document }}</strong>
+          <span class="muted" *ngIf="h.heading">· {{ h.heading }}</span>
+          <div class="muted excerpt" *ngIf="h.excerpt">{{ h.excerpt }}</div>
+        </li>
+      </ol>
+    </div>
+
+    <ol class="steps" *ngIf="steps.length">
+      <li *ngFor="let s of steps; let i = index" class="step">
+        <div class="step-head">
+          <span class="n">{{ i + 1 }}</span>
+          <span class="title">{{ stepTitle(s) }}</span>
+          <span class="ms">{{ s.ms }} ms</span>
+        </div>
+
+        <!-- language -->
+        <div *ngIf="s.name==='language'" class="kv">
+          <div><b>Demandée</b> {{ s.data.requested }}</div>
+          <div><b>Détectée</b> {{ s.data.detected }}</div>
+          <div class="muted">La réponse sera rédigée en <b>{{ s.data.detected }}</b>, quelle que soit la langue des documents.</div>
+        </div>
+
+        <!-- classify -->
+        <div *ngIf="s.name==='classify'">
+          <div class="muted">La question est transformée en vecteur (embedding) et comparée aux phrases-exemples du catalogue.
+            ≥ {{ pct(s.data.thresholds?.confident) }} : on fait confiance à l'exemple le plus proche ·
+            entre {{ pct(s.data.thresholds?.ambiguous) }} et {{ pct(s.data.thresholds?.confident) }} : le LLM arbitre ·
+            en dessous : hors périmètre.</div>
+          <table class="tbl">
+            <tr><th>Similarité</th><th>Exemple le plus proche</th><th>Catégorie</th></tr>
+            <tr *ngFor="let c of s.data.candidates; let i = index" [class.win]="i===0">
+              <td class="simcell"><div class="bar"><i [style.width]="barWidth(c.similarity)"></i></div>{{ pct(c.similarity) }}</td>
+              <td>{{ c.exemplar }} <span class="muted">({{ c.language }})</span></td>
+              <td><code>{{ c.domain }}/{{ c.intent }}</code></td>
+            </tr>
+          </table>
+        </div>
+
+        <div *ngIf="s.name==='classify_llm_fallback'" class="kv">
+          <div><b>Raison</b> {{ s.data.reason }}</div>
+          <div><b>Décision du LLM</b> <code>{{ s.data.decided?.domain }}/{{ s.data.decided?.intent }}</code></div>
+        </div>
+
+        <!-- route -->
+        <div *ngIf="s.name==='route'" class="kv">
+          <div><b>Domaine</b> <code>{{ s.data.domain }}</code></div>
+          <div><b>Intention</b> <code>{{ s.data.intent }}</code></div>
+          <div><b>Route</b> <code>{{ s.data.route }}</code></div>
+          <div><b>Confiance</b> {{ pct(s.data.confidence) }}</div>
+          <div *ngIf="s.data.topic"><b>Sujet</b> {{ s.data.topic }}</div>
+          <div *ngIf="s.data.out_of_scope" class="bad">Hors périmètre</div>
+        </div>
+
+        <!-- retrieve -->
+        <div *ngIf="s.name==='retrieve'">
+          <div class="kv">
+            <div><b>Portée</b> {{ s.data.scope }}</div>
+            <div><b>Requête</b> {{ s.data.query }}</div>
+            <div><b>Seuil de pertinence</b> {{ pct(s.data.min_similarity) }} — en dessous, le passage est ignoré</div>
+          </div>
+          <div *ngIf="!s.data.candidates?.length" class="muted">Aucun passage retourné.</div>
+          <table class="tbl" *ngIf="s.data.candidates?.length">
+            <tr><th>Similarité</th><th>Document</th><th>Extrait</th></tr>
+            <tr *ngFor="let c of s.data.candidates" [class.dropped]="!c.kept">
+              <td class="simcell"><div class="bar"><i [style.width]="barWidth(c.similarity)"></i></div>{{ pct(c.similarity) }}
+                <span class="tag" [class.ok]="c.kept" [class.bad]="!c.kept">{{ c.kept ? 'gardé' : 'ignoré' }}</span></td>
+              <td>{{ c.title }} <span class="muted">{{ c.domain }} {{ c.version }}</span></td>
+              <td class="excerpt" dir="auto">{{ c.excerpt }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- gate -->
+        <div *ngIf="s.name==='gate'" class="kv">
+          <div><b>Verdict</b> <span class="tag" [ngClass]="gateClass(s.data)">{{ s.data.verdict }}</span></div>
+          <div *ngIf="s.data.reason"><b>Raison</b> {{ s.data.reason }}</div>
+          <div *ngIf="s.data.reasons?.length"><b>Raisons</b> {{ s.data.reasons.join(' · ') }}</div>
+          <div *ngIf="s.data.coverage !== undefined"><b>Couverture des sections</b> {{ pct(s.data.coverage) }}</div>
+          <div *ngIf="s.data.citations?.length"><b>Citations</b> {{ s.data.citations.join(', ') }}</div>
+        </div>
+
+        <!-- llm prompt -->
+        <div *ngIf="s.name==='llm_prompt'">
+          <div class="kv"><div><b>Modèle</b> {{ s.data.model || '—' }}</div></div>
+          <details><summary>Instructions système</summary><pre>{{ s.data.system }}</pre></details>
+          <details open><summary>Contenu fourni au modèle (sections + sources)</summary><pre dir="auto">{{ s.data.user }}</pre></details>
+        </div>
+      </li>
+    </ol>
+  </main>
+  <ng-template #pick>
+    <main class="card detail muted center">Sélectionnez un échange à gauche, ou testez une question ci-dessus.</main>
+  </ng-template>
+</div>
+</ng-container>

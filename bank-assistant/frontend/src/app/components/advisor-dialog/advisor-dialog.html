@@ -1,0 +1,57 @@
+<div class="modal-backdrop" *ngIf="open" (click)="close()">
+  <div class="modal adv-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="adv-head">
+      <div>
+        <h3>{{ 'adv.title' | translate }}</h3>
+        <p class="adv-sub">{{ 'adv.subtitle' | translate }}</p>
+      </div>
+      <button type="button" class="adv-close" (click)="close()" aria-label="{{ 'adv.close' | translate }}">✕</button>
+    </div>
+
+    <!-- Success -->
+    <div class="adv-success" *ngIf="submitted">
+      <div class="adv-success-ico">✓</div>
+      <h4>{{ 'adv.success' | translate }}</h4>
+      <p>{{ 'adv.successText' | translate }}</p>
+      <button type="button" class="btn-primary" (click)="close()">{{ 'adv.close' | translate }}</button>
+    </div>
+
+    <ng-container *ngIf="!submitted">
+      <h4 class="adv-section-title">{{ 'adv.contactTitle' | translate }}</h4>
+      <ul class="adv-contacts" *ngIf="contacts.length > 0">
+        <li *ngFor="let c of contacts">{{ c }}</li>
+      </ul>
+      <p class="adv-contacts-empty" *ngIf="contacts.length === 0">{{ 'adv.contactEmpty' | translate }}</p>
+
+      <form (ngSubmit)="submit()" class="adv-form">
+        <h4 class="adv-section-title">{{ 'adv.callbackTitle' | translate }}</h4>
+
+        <label class="adv-field">
+          <span>{{ 'adv.callbackPhone' | translate }}</span>
+          <input type="tel" name="phone" [ngModel]="phone" maxlength="32" required />
+        </label>
+
+        <label class="adv-field">
+          <span>{{ 'adv.callbackWhen' | translate }}</span>
+          <select name="time" [ngModel]="time">
+            <option value="">—</option>
+            <option *ngFor="let s of timeSlots" [value]="s">{{ s }}</option>
+          </select>
+        </label>
+
+        <label class="adv-field">
+          <span>{{ 'adv.callbackMessage' | translate }}</span>
+          <textarea name="message" [ngModel]="message" rows="3" [placeholder]="'adv.callbackMessagePlaceholder' | translate" maxlength="2000"></textarea>
+        </label>
+
+        <p class="adv-error" *ngIf="error">{{ 'adv.error' | translate }}</p>
+
+        <div class="adv-actions">
+          <button type="submit" class="btn-primary" [disabled]="sending || !phone">
+            {{ sending ? ('adv.sending' | translate) : ('adv.callbackSend' | translate) }}
+          </button>
+        </div>
+      </form>
+    </ng-container>
+  </div>
+</div>

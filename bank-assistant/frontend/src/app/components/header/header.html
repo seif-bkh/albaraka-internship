@@ -1,0 +1,11 @@
+<header class="topbar">
+  <div class="crumbs">
+    <span class="section" *ngIf="crumb().section">{{ crumb().section }}</span>
+    <span class="sep" *ngIf="crumb().section">/</span>
+    <span class="title">{{ crumb().title }}</span>
+  </div>
+  <div class="topbar-right">
+    <span class="env-pill" title="Environnement">Production</span>
+    <span class="date">{{ now() | date:'EEEE d MMMM yyyy':'':'fr' }}</span>
+  </div>
+</header>

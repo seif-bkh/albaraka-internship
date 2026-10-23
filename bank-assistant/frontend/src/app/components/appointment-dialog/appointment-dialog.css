@@ -1,0 +1,115 @@
+.appt-modal { max-width: 460px; width: calc(100vw - 32px); }
+
+.appt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.appt-head h3 { margin: 0 0 4px; font-size: 16px; }
+.appt-sub { margin: 0; font-size: 13px; color: var(--text-2); }
+
+.appt-close {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.appt-close:hover { background: var(--neutral-soft); color: var(--text); }
+
+.appt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.appt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.appt-field legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.appt-field select,
+.appt-field input,
+.appt-field textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--surface, #fff);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.appt-field textarea { resize: vertical; }
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.radio input { accent-color: var(--brand); }
+
+.appt-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.appt-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--err);
+}
+
+.appt-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.appt-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 18px 8px 8px;
+}
+
+.appt-success-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ok-soft);
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.appt-success h4 { margin: 4px 0 0; font-size: 16px; }
+.appt-success p { margin: 0 0 10px; font-size: 13.5px; color: var(--text-2); }

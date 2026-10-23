@@ -1,0 +1,84 @@
+<div class="page-header">
+  <div>
+    <h2>Statistiques d'usage</h2>
+    <p class="subtitle">Volumes de conversations, répartition par langue et par intention détectée.</p>
+  </div>
+  <button class="btn-secondary" (click)="loadStats()" [disabled]="loading">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M3 21v-5h5M21 3v5h-5"/></svg>
+    Actualiser
+  </button>
+</div>
+
+<div *ngIf="loading" class="loading-state"><span class="spinner"></span> Chargement des statistiques…</div>
+
+<div *ngIf="errorMsg && !loading" class="alert error">
+  {{ errorMsg }}
+  <button (click)="loadStats()">Réessayer</button>
+</div>
+
+<ng-container *ngIf="!loading">
+  <div class="kpi-grid">
+    <div class="card kpi">
+      <div class="kpi-label">Conversations</div>
+      <div class="kpi-value">{{ totalConversations }}</div>
+      <div class="kpi-sub">{{ totalClients }} clients uniques</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Messages échangés</div>
+      <div class="kpi-value">{{ totalMessages }}</div>
+      <div class="kpi-sub">{{ totalConversations ? (totalMessages / totalConversations | number:'1.0-1') : 0 }} messages / conversation</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Documents indexés</div>
+      <div class="kpi-value">{{ indexedDocuments }}<span class="denom"> / {{ totalDocuments }}</span></div>
+      <div class="kpi-sub">base documentaire</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi-label">Utilisateurs actifs</div>
+      <div class="kpi-value">{{ activeUsers }}<span class="denom"> / {{ totalUsers }}</span></div>
+      <div class="kpi-sub">comptes administrateurs</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-head"><h3>Répartition par langue</h3></div>
+      <div *ngIf="parLangue.length === 0" class="empty-state">Aucune donnée disponible</div>
+      <div class="dist" *ngFor="let item of parLangue">
+        <div class="dist-head">
+          <span class="dist-label">{{ getLangueLabel(item.langue) }}</span>
+          <span class="dist-val">{{ item.count }} <span class="muted">· {{ item.pct }} %</span></span>
+        </div>
+        <div class="meter"><div [style.width.%]="item.pct" [style.background]="getLangueColor(item.langue)"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Répartition par intention</h3></div>
+      <div *ngIf="parIntention.length === 0" class="empty-state">Aucune donnée disponible</div>
+      <div class="dist" *ngFor="let item of parIntention; let i = index">
+        <div class="dist-head">
+          <span class="dist-label">{{ getIntentionLabel(item.intention) }} <code>{{ item.intention }}</code></span>
+          <span class="dist-val">{{ item.count }} <span class="muted">· {{ item.pct }} %</span></span>
+        </div>
+        <div class="meter"><div [style.width.%]="item.pct" [style.background]="getBarColors()[i % getBarColors().length]"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card daily" *ngIf="parJour.length > 0">
+    <div class="card-head"><h3>Activité quotidienne</h3><span class="muted small">30 derniers jours</span></div>
+    <div class="columns">
+      <div class="col" *ngFor="let j of parJour" [title]="formatDate(j.jour) + ' : ' + j.count">
+        <span class="col-val">{{ j.count }}</span>
+        <div class="col-bar" [style.height.px]="(j.count / maxJourCount()) * 120"></div>
+        <span class="col-date">{{ formatDate(j.jour) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="totalConversations === 0" class="card empty-state">
+    <strong>Aucune conversation enregistrée</strong>
+    Les statistiques apparaîtront après les premiers échanges avec l'assistant.
+  </div>
+</ng-container>

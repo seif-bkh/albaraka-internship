@@ -1,0 +1,66 @@
+<div class="modal-backdrop" *ngIf="open" (click)="close()">
+  <div class="modal sim-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="sim-head">
+      <div>
+        <h3>{{ 'sim.title' | translate }}</h3>
+        <p class="sim-sub">{{ 'sim.subtitle' | translate }}</p>
+      </div>
+      <button type="button" class="sim-close" (click)="close()" aria-label="{{ 'appt.close' | translate }}">✕</button>
+    </div>
+
+    <div class="loading-state" *ngIf="loadingProducts"><span class="spinner"></span></div>
+
+    <div class="sim-empty" *ngIf="!loadingProducts && products.length === 0">
+      {{ 'sim.noProducts' | translate }}
+    </div>
+
+    <ng-container *ngIf="!loadingProducts && products.length > 0">
+      <div class="sim-form">
+        <label class="sim-field">
+          <span>{{ 'sim.product' | translate }}</span>
+          <select [ngModel]="product" (ngModelChange)="onProductChange($event)">
+            <option value="">{{ 'sim.productPlaceholder' | translate }}</option>
+            <option *ngFor="let p of products" [value]="p">{{ p }}</option>
+          </select>
+        </label>
+
+        <label class="sim-field">
+          <span>{{ 'sim.amount' | translate }}</span>
+          <input type="number" [ngModel]="amount" (ngModelChange)="onAmountChange($event)"
+                 min="500" max="5000000" step="500" />
+          <input type="range" [ngModel]="amount" (ngModelChange)="onAmountChange($event)"
+                 min="500" [max]="AMOUNT_SLIDER_MAX" step="5000" />
+        </label>
+
+        <label class="sim-field">
+          <span>{{ 'sim.duration' | translate }} — <strong>{{ months }} {{ 'sim.months' | translate }}</strong></span>
+          <input type="range" [ngModel]="months" (ngModelChange)="onMonthsChange($event)"
+                 min="12" max="120" step="6" />
+        </label>
+      </div>
+
+      <div class="sim-result" *ngIf="product">
+        <div class="loading-state" *ngIf="computing"><span class="spinner"></span></div>
+
+        <ng-container *ngIf="!computing && result">
+          <div *ngIf="result.rateAvailable" class="sim-estimate">
+            <span class="sim-estimate-label">{{ 'sim.monthly' | translate }}</span>
+            <strong class="sim-estimate-value">
+              {{ result.monthlyPayment | number:'1.2-2' }} <span class="sim-currency">{{ result.currency }}</span>
+            </strong>
+            <dl class="sim-details">
+              <div><dt>{{ 'sim.rate' | translate }}</dt><dd>{{ result.ratePercent }} %</dd></div>
+              <div><dt>{{ 'sim.totalProfit' | translate }}</dt><dd>{{ result.totalProfit | number:'1.2-2' }} {{ result.currency }}</dd></div>
+              <div><dt>{{ 'sim.totalRepayment' | translate }}</dt><dd>{{ result.totalRepayment | number:'1.2-2' }} {{ result.currency }}</dd></div>
+            </dl>
+          </div>
+          <p class="sim-unavailable" *ngIf="!result.rateAvailable">{{ 'sim.notAvailable' | translate }}</p>
+        </ng-container>
+
+        <p class="sim-error" *ngIf="error">{{ 'sim.error' | translate }}</p>
+      </div>
+
+      <p class="sim-disclaimer">{{ 'sim.disclaimer' | translate }}</p>
+    </ng-container>
+  </div>
+</div>

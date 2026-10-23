@@ -1,0 +1,15 @@
+<div class="pt" *ngIf="timings">
+  <div class="pt-head">
+    <h3>{{ 'prayer.title' | translate }}</h3>
+    <span class="pt-next" *ngIf="timings.next">
+      {{ 'prayer.next' | translate }} · <strong>{{ timings.next.time }}</strong>
+      <em *ngIf="countdown">({{ 'prayer.in' | translate }} {{ countdown }})</em>
+    </span>
+  </div>
+  <ul class="pt-list">
+    <li *ngFor="let p of prayers" [class.is-next]="timings.next?.key === p.key">
+      <span class="pt-name">{{ ('prayer.' + p.key) | translate }}</span>
+      <span class="pt-time">{{ p.time }}</span>
+    </li>
+  </ul>
+</div>

@@ -1,0 +1,361 @@
+<div class="landing" [attr.dir]="dir">
+  <!-- ═══════════════════════ Navbar ═══════════════════════ -->
+  <header class="nav" [class.scrolled]="scrolled">
+    <div class="nav-inner">
+      <a class="nav-brand" (click)="goto('hero')" tabindex="0">
+        <img src="/albaraka.png" alt="Al Baraka Bank Tunisie" class="nav-logo">
+      </a>
+
+      <nav class="nav-links" aria-label="Navigation principale">
+        <button type="button" (click)="goto('hero')">{{ 'land.nav.home' | translate }}</button>
+        <button type="button" (click)="goto('products')">{{ 'land.nav.products' | translate }}</button>
+        <button type="button" (click)="goto('services')">{{ 'land.nav.services' | translate }}</button>
+        <button type="button" (click)="goto('assistant')">{{ 'land.nav.assistant' | translate }}</button>
+        <button type="button" (click)="goto('faq')">{{ 'land.nav.faq' | translate }}</button>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="lang-switch" role="tablist" aria-label="Langue">
+          <button type="button" [class.on]="i18n.lang() === 'fr'" (click)="setLang('fr')">FR</button>
+          <button type="button" [class.on]="i18n.lang() === 'ar'" (click)="setLang('ar')">AR</button>
+          <button type="button" [class.on]="i18n.lang() === 'en'" (click)="setLang('en')">EN</button>
+        </div>
+        <a class="btn-ghost" [routerLink]="['/login']">{{ 'land.nav.login' | translate }}</a>
+        <a class="btn-primary" [routerLink]="['/register']">{{ 'land.nav.openAccount' | translate }}</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════ Hero ═══════════════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <svg class="hero-pattern" viewBox="0 0 560 560" aria-hidden="true">
+        <defs>
+          <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1.6" fill="currentColor"/>
+          </pattern>
+        </defs>
+        <rect width="560" height="560" fill="url(#dots)"/>
+      </svg>
+    </div>
+
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <span class="hero-badge">
+          <span class="badge-dot"></span>
+          {{ 'land.hero.badge' | translate }}
+        </span>
+        <h1>
+          {{ 'land.hero.title1' | translate }}
+          <span class="grad">{{ 'land.hero.title2' | translate }}</span>
+          {{ 'land.hero.title3' | translate }}
+        </h1>
+        <p class="hero-sub">{{ 'land.hero.subtitle' | translate }}</p>
+        <div class="hero-ctas">
+          <a class="btn-primary btn-lg" [routerLink]="['/register']">{{ 'land.hero.ctaAccount' | translate }}</a>
+          <button type="button" class="btn-outline btn-lg" (click)="openAssistant()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            {{ 'land.hero.ctaAssistant' | translate }}
+          </button>
+        </div>
+        <div class="hero-trust">
+          <span class="stars" aria-hidden="true">★★★★★</span>
+          <span>{{ 'land.hero.trust' | translate }}</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="mock-card">
+          <div class="mock-card-top">
+            <span class="mock-card-chip"></span>
+            <span class="mock-card-brand">alBaraka</span>
+          </div>
+          <div class="mock-card-num">4571&nbsp;••••&nbsp;••••&nbsp;6842</div>
+          <div class="mock-card-bottom">
+            <span>YASSINE BEN SALAH</span>
+            <span>09/29</span>
+          </div>
+        </div>
+
+        <div class="mock-chat">
+          <div class="mock-chat-head">
+            <span class="mock-chat-avatar">
+              <img src="/albaraka.png" alt="">
+            </span>
+            <div>
+              <strong>Assistant Al Baraka</strong>
+              <small>{{ 'widget.subtitle' | translate }}</small>
+            </div>
+            <span class="mock-chat-live"></span>
+          </div>
+          <div class="mock-bubble user">{{ 'land.hero.cardQuestion' | translate }}</div>
+          <div class="mock-bubble bot">
+            {{ 'land.hero.cardAnswer' | translate }}
+            <span class="mock-sources">
+              <span class="src-dot"></span> {{ 'land.hero.cardGrounded' | translate }}
+            </span>
+          </div>
+          <div class="mock-typing"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="mock-balance">
+          <small>{{ 'land.hero.cardBalance' | translate }}</small>
+          <strong>18 742,480 <span>TND</span></strong>
+          <span class="mock-balance-up">▲ +2,4 %</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats band -->
+    <div class="stats">
+      <div class="stats-inner">
+        <div class="stat">
+          <strong>{{ 'land.stats.years' | translate }}</strong>
+          <span>{{ 'land.stats.founded' | translate }}</span>
+        </div>
+        <div class="stat">
+          <strong>{{ 'land.stats.awardsValue' | translate }}</strong>
+          <span>{{ 'land.stats.awards' | translate }}</span>
+        </div>
+        <div class="stat">
+          <strong>{{ 'land.stats.langsValue' | translate }}</strong>
+          <span>{{ 'land.stats.langs' | translate }}</span>
+        </div>
+        <div class="stat">
+          <strong>{{ 'land.stats.availableValue' | translate }}</strong>
+          <span>{{ 'land.stats.available' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ Produits ═══════════════════════ -->
+  <section class="section" id="products">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="section-tag">{{ 'land.nav.products' | translate }}</span>
+        <h2>{{ 'land.products.title' | translate }}</h2>
+        <p>{{ 'land.products.subtitle' | translate }}</p>
+      </div>
+
+      <div class="products-grid">
+        <article class="product-card" *ngFor="let p of products">
+          <span class="product-icon" [attr.data-icon]="p.icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <ng-container [ngSwitch]="p.icon">
+                <ng-container *ngSwitchCase="'mourabaha'">
+                  <path d="M3 10l9-6 9 6"/><path d="M5 10v9M9.5 10v9M14.5 10v9M19 10v9"/><path d="M3 19h18"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'ijara'">
+                  <rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'car'">
+                  <path d="M5 17h14M6.5 17a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM20.5 17a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                  <path d="M4 16v-4l2-5h12l2 5v4"/><path d="M4 12h16"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'travel'">
+                  <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'card'">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'pack'">
+                  <path d="M20 12v9H4v-9"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                </ng-container>
+              </ng-container>
+            </svg>
+          </span>
+          <h3>{{ 'land.prod.' + p.key + '.name' | translate }}</h3>
+          <p>{{ 'land.prod.' + p.key + '.desc' | translate }}</p>
+          <span class="product-more">{{ 'land.prod.more' | translate }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ Assistant ═══════════════════════ -->
+  <section class="assistant" id="assistant">
+    <div class="assistant-inner">
+      <div class="assistant-copy">
+        <span class="section-tag light">{{ 'land.assistant.tag' | translate }}</span>
+        <h2>{{ 'land.assistant.title' | translate }}</h2>
+        <p class="assistant-sub">{{ 'land.assistant.subtitle' | translate }}</p>
+
+        <ul class="assistant-features">
+          <li>
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            </span>
+            <div>
+              <strong>{{ 'land.assistant.f1.title' | translate }}</strong>
+              <span>{{ 'land.assistant.f1.desc' | translate }}</span>
+            </div>
+          </li>
+          <li>
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg>
+            </span>
+            <div>
+              <strong>{{ 'land.assistant.f2.title' | translate }}</strong>
+              <span>{{ 'land.assistant.f2.desc' | translate }}</span>
+            </div>
+          </li>
+          <li>
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </span>
+            <div>
+              <strong>{{ 'land.assistant.f3.title' | translate }}</strong>
+              <span>{{ 'land.assistant.f3.desc' | translate }}</span>
+            </div>
+          </li>
+        </ul>
+
+        <button type="button" class="btn-primary btn-lg" (click)="openAssistant()">
+          {{ 'land.assistant.cta' | translate }}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="assistant-visual" aria-hidden="true">
+        <div class="ava-window">
+          <div class="ava-head">
+            <span class="ava-dot"></span><span class="ava-dot"></span><span class="ava-dot"></span>
+            <span class="ava-title">{{ 'passistant.title' | translate }}</span>
+          </div>
+          <div class="ava-body">
+            <div class="ava-msg user">"{{ 'land.faq.q3' | translate }}"</div>
+            <div class="ava-msg bot">
+              {{ 'land.faq.a3' | translate }}
+              <span class="ava-chips">
+                <span class="ava-chip">Circulaire_BCT_2019-08.pdf</span>
+                <span class="ava-chip">Guide_Interne_Operations_Bancaires_Islamiques.docx</span>
+              </span>
+            </div>
+            <div class="ava-typing">
+              <span>{{ 'land.assistant.thinking' | translate }}</span>
+              <span class="dots"><i></i><i></i><i></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ Services ═══════════════════════ -->
+  <section class="section section-alt" id="services">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="section-tag">{{ 'land.nav.services' | translate }}</span>
+        <h2>{{ 'land.services.title' | translate }}</h2>
+        <p>{{ 'land.services.subtitle' | translate }}</p>
+      </div>
+      <div class="services-grid">
+        <div class="service-tile" *ngFor="let s of services">
+          <span class="service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <ng-container [ngSwitch]="s.icon">
+                <ng-container *ngSwitchCase="'phone'">
+                  <rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'calc'">
+                  <rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'calendar'">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                </ng-container>
+                <ng-container *ngSwitchCase="'change'">
+                  <path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M3 21v-5h5M21 3v5h-5"/>
+                </ng-container>
+              </ng-container>
+            </svg>
+          </span>
+          <div>
+            <strong>{{ 'land.srv.' + s.key + '.name' | translate }}</strong>
+            <span>{{ 'land.srv.' + s.key + '.desc' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ FAQ ═══════════════════════ -->
+  <section class="section" id="faq">
+    <div class="section-inner narrow">
+      <div class="section-head">
+        <span class="section-tag">{{ 'land.nav.faq' | translate }}</span>
+        <h2>{{ 'land.faq.title' | translate }}</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item" *ngFor="let n of faqs" [attr.open]="n === 1">
+          <summary>
+            {{ 'land.faq.q' + n | translate }}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <p>{{ 'land.faq.a' + n | translate }}</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ Actualités (P2) ═══════════════════════ -->
+  <section class="section section-alt" id="news">
+    <div class="section-inner">
+      <app-news-section max="3"></app-news-section>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ CTA ═══════════════════════ -->
+  <section class="cta-band">
+    <div class="cta-inner">
+      <h2>{{ 'land.cta.title' | translate }}</h2>
+      <p>{{ 'land.cta.subtitle' | translate }}</p>
+      <div class="cta-actions">
+        <a class="btn-light btn-lg" [routerLink]="['/register']">{{ 'land.cta.button' | translate }}</a>
+        <button type="button" class="btn-outline-light btn-lg" (click)="openAssistant()">{{ 'land.hero.ctaAssistant' | translate }}</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ Footer ═══════════════════════ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="/albaraka.png" alt="Al Baraka Bank Tunisie" class="footer-logo">
+        <p>{{ 'land.footer.tagline' | translate }}</p>
+        <p class="footer-disclaimer">{{ 'land.footer.disclaimer' | translate }}</p>
+      </div>
+      <div class="footer-col">
+        <h4>{{ 'land.footer.products' | translate }}</h4>
+        <span>{{ 'land.prod.mourabaha.name' | translate }}</span>
+        <span>{{ 'land.prod.ijara.name' | translate }}</span>
+        <span>{{ 'land.prod.sayarat.name' | translate }}</span>
+        <span>{{ 'land.prod.cards.name' | translate }}</span>
+      </div>
+      <div class="footer-col">
+        <h4>{{ 'land.footer.services' | translate }}</h4>
+        <span>{{ 'land.srv.banecti.name' | translate }}</span>
+        <span>{{ 'land.srv.simulator.name' | translate }}</span>
+        <span>{{ 'land.srv.appointment.name' | translate }}</span>
+        <span>{{ 'land.srv.change.name' | translate }}</span>
+      </div>
+      <div class="footer-col">
+        <h4>{{ 'land.footer.help' | translate }}</h4>
+        <span>{{ 'land.footer.contact' | translate }}</span>
+        <span>{{ 'land.footer.appointment' | translate }}</span>
+        <span>{{ 'land.footer.faq' | translate }}</span>
+        <a [routerLink]="['/login']">{{ 'land.footer.staffAccess' | translate }}</a>
+      </div>
+    </div>
+    <div class="footer-bar">
+      <span>{{ 'land.footer.rights' | translate:{ year: year } }}</span>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════ Widget flottant ═══════════════════════ -->
+  <app-chat-widget />
+</div>

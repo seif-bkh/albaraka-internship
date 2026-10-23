@@ -1,0 +1,194 @@
+/* Instrument strip. Dense on purpose: an operator reads it in one saccade, then looks
+   away. Values are tabular so digits do not wobble while the poll updates them. */
+
+.instrument {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 0;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: var(--r-md, 6px);
+  overflow: hidden;
+}
+
+.reading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  min-width: 0;
+  border-right: 1px solid var(--border, #e3e6eb);
+}
+
+.reading.profile { min-width: 0; flex: 1 1 260px; }
+
+.reading-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.reading-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-3, #8a93a3);
+  line-height: 1.2;
+}
+
+.reading-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text, #16181d);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reading-value.num { font-variant-numeric: tabular-nums; }
+.reading-value.mono {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.reading-value.value-err { color: var(--err, #c0271d); }
+
+.version {
+  margin-left: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-3, #8a93a3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* State lamps: green = serving, red = unreachable, grey = not read yet. */
+.lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-3, #8a93a3);
+}
+.lamp-ok  { background: var(--ok, #1a7f4b); box-shadow: 0 0 0 3px var(--ok-soft, #e6f4ec); }
+.lamp-err { background: var(--err, #c0271d); box-shadow: 0 0 0 3px var(--err-soft, #fdeceb); }
+.lamp-idle { background: var(--border-strong, #cfd4dc); }
+
+.chip {
+  flex-shrink: 0;
+  padding: 1px 0.4375rem;
+  border-radius: 999px;
+  border: 1px solid var(--border, #e3e6eb);
+  background: var(--surface-2, #f8f9fb);
+  color: var(--text-2, #4b5563);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.chip-warn { border-color: #f0d4ae; background: var(--warn-soft, #fdf1e2); color: var(--warn, #b3600a); }
+.chip-err  { border-color: #f3c9c6; background: var(--err-soft, #fdeceb); color: var(--err, #c0271d); }
+
+/* ── actions ─────────────────────────────────────────────────────────────── */
+
+.reading-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-left: auto;
+  padding: 0.5rem 0.75rem;
+}
+
+.checked {
+  font-size: 0.6875rem;
+  color: var(--text-3, #8a93a3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: var(--r-sm, 4px);
+  background: var(--surface, #fff);
+  color: var(--text-2, #4b5563);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-refresh:hover:not(:disabled) { border-color: var(--border-strong, #cfd4dc); color: var(--text, #16181d); }
+.btn-refresh:disabled { cursor: progress; opacity: 0.6; }
+.btn-refresh:focus-visible { outline: 2px solid var(--brand, #e0122f); outline-offset: 2px; }
+
+.spinning { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── sealed + down ───────────────────────────────────────────────────────── */
+
+.sealed-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #f0d4ae;
+  border-left: 3px solid var(--brand-orange, #f5881c);
+  border-radius: var(--r-sm, 4px);
+  background: var(--warn-soft, #fdf1e2);
+  color: var(--warn, #b3600a);
+  font-size: 0.75rem;
+}
+
+.sealed-banner p { margin: 0; line-height: 1.45; }
+.sealed-notice { color: #8a5a10; }
+.sep { margin: 0 0.25rem; opacity: 0.6; }
+
+.sealed-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 1px 0.4375rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid #f0d4ae;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.spinner-sm {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(179, 96, 10, 0.25);
+  border-top-color: var(--warn, #b3600a);
+  animation: spin 0.8s linear infinite;
+}
+
+.down-note {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--err, #c0271d);
+  background: var(--err-soft, #fdeceb);
+  color: #7d1b15;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.down-note a { color: #7d1b15; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .instrument { flex-direction: column; }
+  .reading { border-right: 0; border-bottom: 1px solid var(--border, #e3e6eb); }
+  .reading-actions { margin-left: 0; justify-content: space-between; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning, .spinner-sm { animation: none; }
+  .btn-refresh { transition: none; }
+}

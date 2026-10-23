@@ -1,0 +1,39 @@
+<div class="portal" [attr.dir]="dir">
+  <header class="portal-topbar">
+    <div class="topbar-inner">
+      <a [routerLink]="['/portal']" class="brand">
+        <img src="/albaraka.png" alt="Al Baraka Bank" class="brand-logo">
+        <span class="brand-sep"></span>
+        <span class="brand-name">{{ 'portal.brand' | translate }}</span>
+      </a>
+
+      <nav class="portal-nav" aria-label="Navigation du portail">
+        <a routerLink="/portal" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          {{ 'portal.nav.home' | translate }}
+        </a>
+        <a routerLink="/portal/assistant" routerLinkActive="active">
+          {{ 'portal.nav.assistant' | translate }}
+        </a>
+        <a routerLink="/portal/profil" routerLinkActive="active">
+          {{ 'portal.nav.profile' | translate }}
+        </a>
+      </nav>
+
+      <div class="portal-actions">
+        <div class="lang-switch" role="tablist" aria-label="Langue">
+          <button type="button" [class.on]="i18n.lang() === 'fr'" (click)="setLang('fr')">FR</button>
+          <button type="button" [class.on]="i18n.lang() === 'ar'" (click)="setLang('ar')">ع</button>
+          <button type="button" [class.on]="i18n.lang() === 'en'" (click)="setLang('en')">EN</button>
+        </div>
+        <button type="button" class="logout" (click)="logout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>{{ 'portal.logout' | translate }}</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="portal-main">
+    <router-outlet></router-outlet>
+  </main>
+</div>

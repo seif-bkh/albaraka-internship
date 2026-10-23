@@ -1,0 +1,121 @@
+.adv-modal { max-width: 460px; width: calc(100vw - 32px); }
+
+.adv-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.adv-head h3 { margin: 0 0 4px; font-size: 16px; }
+.adv-sub { margin: 0; font-size: 13px; color: var(--text-2); }
+
+.adv-close {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.adv-close:hover { background: var(--neutral-soft); color: var(--text); }
+
+.adv-section-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-2);
+}
+
+.adv-contacts {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adv-contacts li {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--neutral-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.adv-contacts-empty {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.adv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.adv-field input,
+.adv-field select,
+.adv-field textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--surface, #fff);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.adv-field textarea { resize: vertical; }
+
+.adv-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--err);
+}
+
+.adv-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.adv-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 18px 8px 8px;
+}
+
+.adv-success-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ok-soft);
+  color: var(--ok);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.adv-success h4 { margin: 4px 0 0; font-size: 16px; }
+.adv-success p { margin: 0 0 10px; font-size: 13.5px; color: var(--text-2); }

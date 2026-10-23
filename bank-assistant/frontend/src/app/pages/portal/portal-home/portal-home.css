@@ -1,0 +1,187 @@
+/* Page d'accueil du portail client */
+.portal-page { font-size: 14px; }
+.page-wrap { max-width: 1180px; margin-inline: auto; padding: 28px 24px 64px; display: grid; gap: 24px; }
+
+/* Bandeau d'accueil */
+.welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  background: var(--ink, #101418);
+  background-image: radial-gradient(70% 140% at 88% -20%, rgba(245,136,28,.4) 0%, transparent 55%),
+                    radial-gradient(55% 120% at 5% 120%, rgba(224,18,47,.42) 0%, transparent 60%);
+  border-radius: 20px;
+  padding: 30px 32px;
+  color: #fff;
+}
+.welcome-copy h1 { color: #fff; font-size: 23px; margin: 0 0 5px; }
+.welcome-copy p { color: #aab2bc; margin: 0 0 12px; font-size: 14px; }
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #d6dae0;
+  background: rgba(255,255,255,.09);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  padding: 5px 13px;
+}
+.ref-chip strong { color: #fff; font-variant-numeric: tabular-nums; }
+.welcome-kpi { text-align: end; display: grid; gap: 4px; }
+.kpi-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #aab2bc; }
+.kpi-value { font-size: 30px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.kpi-devise { font-size: 13px; color: #f5881c; font-weight: 700; }
+
+/* Actions rapides */
+.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.quick-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: 14px;
+  padding: 15px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text, #16181d);
+  text-align: start;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.quick-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md, 0 4px 12px rgba(16,24,40,.08)); border-color: var(--border-strong, #cfd4dc); }
+.quick-ico {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--brand-soft, #fdeaed);
+  color: var(--brand, #e0122f);
+}
+.quick-tile.primary { background: var(--brand-gradient, linear-gradient(120deg, #f5881c, #e0122f)); border: 0; color: #fff; }
+.quick-tile.primary .quick-ico { background: rgba(255,255,255,.18); color: #fff; }
+.quick-tile.primary:hover { box-shadow: 0 12px 26px -10px rgba(224,18,47,.55); }
+.quick-ico svg { width: 19px; height: 19px; }
+
+/* Blocs */
+.block { background: #fff; border: 1px solid var(--border, #e3e6eb); border-radius: 16px; padding: 22px; }
+.block-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; }
+.block-head h2 { font-size: 15.5px; margin: 0; }
+.filter {
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  color: var(--text-2, #4b5563);
+  max-width: 300px;
+}
+.two-col { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
+
+/* Comptes */
+.accounts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.account-card {
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: 14px;
+  padding: 18px;
+  display: grid;
+  gap: 6px;
+  background: linear-gradient(180deg, #fbfaf8, #fff);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.account-card:hover { border-color: var(--border-strong, #cfd4dc); box-shadow: var(--shadow-sm, 0 1px 2px rgba(16,24,40,.05)); }
+.account-top { display: flex; justify-content: space-between; align-items: center; }
+.account-type {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--brand, #e0122f);
+  background: var(--brand-soft, #fdeaed);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.account-devise { font-size: 11.5px; color: var(--text-3, #8a93a3); font-weight: 700; }
+.account-balance { font-size: 24px; font-weight: 800; color: var(--text, #16181d); font-variant-numeric: tabular-nums; }
+.account-libelle { font-size: 12.5px; color: var(--text-2, #4b5563); }
+.account-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px dashed var(--border, #e3e6eb);
+  padding-top: 10px;
+  margin-top: 6px;
+}
+.account-iban { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-3, #8a93a3); font-variant-numeric: tabular-nums; }
+.account-iban svg { width: 15px; height: 15px; }
+.copy-btn { font-size: 11.5px; font-weight: 600; color: var(--brand, #e0122f); background: none; white-space: nowrap; }
+.copy-btn:hover { text-decoration: underline; }
+
+/* Cartes */
+.cards-stack { display: grid; gap: 14px; }
+.bank-card { display: grid; gap: 10px; }
+.bank-card-face {
+  background: var(--ink, #101418);
+  background-image: radial-gradient(120% 160% at 85% -10%, rgba(245,136,28,.5) 0%, transparent 52%),
+                    radial-gradient(130% 150% at 10% 115%, rgba(224,18,47,.55) 0%, transparent 55%);
+  border-radius: 14px;
+  color: #fff;
+  padding: 16px 18px;
+  display: grid;
+  gap: 10px;
+  aspect-ratio: 2.6;
+  align-content: space-between;
+}
+.bank-card.blocked .bank-card-face { filter: grayscale(.85) brightness(.75); }
+.bank-card-row { display: flex; justify-content: space-between; align-items: center; }
+.bank-card-brand { font-weight: 700; font-style: italic; font-size: 14px; }
+.bank-card-net { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: rgba(255,255,255,.14); border-radius: 5px; padding: 3px 7px; }
+.bank-card-num { font-family: var(--mono, monospace); font-size: 15.5px; letter-spacing: 2px; }
+.bank-card-row.small { font-size: 11px; opacity: .85; }
+.bank-card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; }
+.bank-card-type { font-weight: 700; color: var(--text, #16181d); text-transform: capitalize; }
+.bank-card-status { font-size: 11px; font-weight: 700; color: var(--neutral, #5b6472); background: var(--neutral-soft, #eef0f3); border-radius: 999px; padding: 3px 10px; }
+.bank-card-status.ok { color: var(--ok, #1a7f4b); background: var(--ok-soft, #e6f4ec); }
+
+/* Transactions */
+.tx-table { width: 100%; border-collapse: collapse; }
+.tx-table td { padding: 10px 8px; border-bottom: 1px solid var(--border, #e3e6eb); vertical-align: middle; }
+.tx-table tr:last-child td { border-bottom: 0; }
+.tx-ico { width: 34px; }
+.tx-ico svg { width: 17px; height: 17px; color: var(--err, #c0271d); background: var(--err-soft, #fdeceb); border-radius: 8px; padding: 5px; }
+.tx-ico.credit svg { color: var(--ok, #1a7f4b); background: var(--ok-soft, #e6f4ec); }
+.tx-label strong { display: block; font-size: 13px; font-weight: 600; color: var(--text, #16181d); }
+.tx-label span { font-size: 11.5px; color: var(--text-3, #8a93a3); }
+.tx-amount { text-align: end; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; color: var(--err, #c0271d); white-space: nowrap; }
+.tx-amount.credit { color: var(--ok, #1a7f4b); }
+
+/* États */
+.state { display: grid; place-items: center; padding: 60px 0; }
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--brand-soft, #fdeaed);
+  border-top-color: var(--brand, #e0122f);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-inline { font-size: 13px; color: var(--text-3, #8a93a3); text-align: center; padding: 22px 0; }
+.alert.error {
+  background: var(--err-soft, #fdeceb);
+  color: var(--err, #c0271d);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .welcome { flex-direction: column; align-items: flex-start; }
+  .welcome-kpi { text-align: start; }
+  .quick { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}

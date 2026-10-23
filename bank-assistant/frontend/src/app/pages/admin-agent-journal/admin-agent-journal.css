@@ -1,0 +1,14 @@
+/* Layout for the journal. Colours and controls come from the shared sheet. */
+
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.card { margin-bottom: 1rem; }
+.small { font-size: .8rem; }
+
+.filters { display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+           flex-wrap: wrap; margin-bottom: .5rem; }
+.chips { display: flex; gap: .35rem; flex-wrap: wrap; }
+.chips button { border: 1px solid #e3e8ef; background: #fff; border-radius: 999px; cursor: pointer;
+                padding: .15rem .6rem; font-size: .8rem; color: #374151; }
+.chips button.on { background: #eef2f7; border-color: #cbd5e1; font-weight: 600; }
+.chips .count { color: #6b7280; font-size: .72rem; }
+.search { max-width: 320px; }

@@ -1,0 +1,137 @@
+/* Console RAGLab — an operator's instrument, not a card dashboard.
+   One rule for this file: structure carries meaning. The tab underline marks the
+   current screen, the state lamp marks the service's health, the hairline separates
+   the four things an operator reads at once. Nothing else is decorative. */
+
+.raglab-console {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+
+.console-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--border, #e3e6eb);
+}
+
+.head-copy h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text, #16181d);
+}
+
+.head-copy p {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-2, #4b5563);
+}
+
+.head-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--r-md, 6px);
+  border: 1px solid var(--border, #e3e6eb);
+  background: var(--surface, #fff);
+  color: var(--text-2, #4b5563);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.head-link:hover,
+.head-link:focus-visible {
+  border-color: var(--border-strong, #cfd4dc);
+  color: var(--text, #16181d);
+}
+
+.head-link:focus-visible {
+  outline: 2px solid var(--brand, #e0122f);
+  outline-offset: 2px;
+}
+
+/* ── tabs ───────────────────────────────────────────────────────────────── */
+
+.raglab-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 1.25rem;
+  border-bottom: 1px solid var(--border, #e3e6eb);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.raglab-nav::-webkit-scrollbar { display: none; }
+
+.raglab-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.5rem 0 0.625rem;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--text-2, #4b5563);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.raglab-tab svg { color: var(--text-3, #8a93a3); transition: color 0.15s ease; }
+
+.raglab-tab:hover { color: var(--text, #16181d); }
+.raglab-tab:hover svg { color: var(--text-2, #4b5563); }
+
+.raglab-tab.active {
+  color: var(--brand, #e0122f);
+  border-bottom-color: var(--brand, #e0122f);
+  font-weight: 600;
+}
+
+.raglab-tab.active svg { color: var(--brand, #e0122f); }
+
+.raglab-tab:focus-visible {
+  outline: 2px solid var(--brand, #e0122f);
+  outline-offset: 3px;
+  border-radius: var(--r-sm, 4px);
+}
+
+/* ── screen ─────────────────────────────────────────────────────────────── */
+
+.raglab-screen-content {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e3e6eb);
+  border-radius: var(--r-lg, 10px);
+  padding: 1.25rem;
+  /* Reserved, so switching screens never makes the page jump. */
+  min-height: 520px;
+}
+
+@media (max-width: 900px) {
+  .console-head { flex-direction: column; gap: 0.75rem; }
+  .raglab-nav { gap: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .raglab-tab,
+  .raglab-tab svg,
+  .head-link { transition: none; }
+}

@@ -1,0 +1,118 @@
+.sim-modal { max-width: 480px; width: calc(100vw - 32px); }
+
+.sim-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sim-head h3 { margin: 0 0 4px; font-size: 16px; }
+.sim-sub { margin: 0; font-size: 13px; color: var(--text-2); }
+
+.sim-close {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.sim-close:hover { background: var(--neutral-soft); color: var(--text); }
+
+.sim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sim-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sim-field select,
+.sim-field input[type="number"] {
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--surface, #fff);
+  color: var(--text);
+}
+
+.sim-field input[type="range"] {
+  accent-color: var(--brand);
+}
+
+.sim-result { margin-top: 16px; }
+
+.sim-estimate {
+  background: var(--brand-soft, rgba(13, 101, 76, .08));
+  border: 1px solid var(--brand);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sim-estimate-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.sim-estimate-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-currency { font-size: 14px; font-weight: 600; }
+
+.sim-details {
+  margin: 8px 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+
+.sim-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.sim-details dt { color: var(--text-2); }
+.sim-details dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.sim-unavailable {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.sim-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--err);
+}
+
+.sim-disclaimer {
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.5;
+}

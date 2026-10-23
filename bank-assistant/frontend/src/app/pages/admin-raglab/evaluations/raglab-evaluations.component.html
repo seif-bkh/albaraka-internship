@@ -1,0 +1,220 @@
+<div class="eval-container">
+  <!-- Sub Navigation -->
+  <div class="nav-subtabs">
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'evaluate'"
+      (click)="setTab('evaluate')">
+      Évaluation sur jeu de questions
+    </button>
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'harness'"
+      (click)="setTab('harness')">
+      Harness 50 (Offline)
+    </button>
+    <button
+      type="button"
+      class="subtab-btn"
+      [class.active]="activeTab === 'catalog'"
+      (click)="setTab('catalog')">
+      Catalogue xKiro
+    </button>
+  </div>
+
+  <!-- 1. EVALUATE QUESTION SET -->
+  <div class="tab-pane" *ngIf="activeTab === 'evaluate'">
+    <div class="eval-form-card">
+      <h4>Lancer une mesure sur un jeu de questions</h4>
+      <p class="form-desc">
+        Le service évalue la précision de récupération (hit&#64;1, hit&#64;3, hit&#64;5) en vectorisant chaque question du jeu.
+        Cette opération est gourmande et peut durer plusieurs minutes.
+      </p>
+
+      <div class="eval-controls-grid">
+        <div class="field-item">
+          <label for="q-set-select">Fichier de questions :</label>
+          <select id="q-set-select" [(ngModel)]="selectedQuestionSet" class="form-select-sm">
+            <option value="questions.json">questions.json (Jeu standard)</option>
+            <option value="questions_50.json">questions_50.json (Jeu étendu 50 questions)</option>
+            <option value="questions_real.json">questions_real.json (Cas réels clients)</option>
+            <option value="custom">Autre chemin absolu…</option>
+          </select>
+        </div>
+
+        <div class="field-item" *ngIf="selectedQuestionSet === 'custom'">
+          <label for="custom-path-input">Chemin absolu sur l'hôte :</label>
+          <input id="custom-path-input" type="text" [(ngModel)]="customQuestionPath" class="form-input-sm" placeholder="/app/raglab/data/my_questions.json">
+        </div>
+
+        <div class="field-item">
+          <label for="topk-eval">Top-K évalué :</label>
+          <input id="topk-eval" type="number" min="1" max="50" [(ngModel)]="topK" class="form-input-sm">
+        </div>
+
+        <div class="field-item align-end">
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="evaluating || raglab.isSealed()"
+            (click)="onRunEvaluate()">
+            <span class="spinner-xs" *ngIf="evaluating"></span>
+            <span>{{ evaluating ? 'Évaluation en cours…' : 'Lancer l\'évaluation' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Long job indicator -->
+    <div class="long-job-banner" *ngIf="evaluating">
+      <div class="banner-top">
+        <span class="spinner-sm"></span>
+        <strong>Évaluation en cours…</strong>
+      </div>
+      <p>
+        Chaque question du jeu est vectorisée via l'embedder configuré, puis comparée aux fragments du corpus.
+        Cette mesure de laboratoire s'exécute en tâche de fond. Merci de patienter…
+      </p>
+    </div>
+
+    <!-- Error -->
+    <div class="alert-box error" *ngIf="evalError">
+      <strong>Erreur : {{ evalError.reason }}</strong>
+      <p>{{ evalError.message }}</p>
+    </div>
+
+    <!-- Results Section -->
+    <div class="eval-results" *ngIf="evalResult">
+      <!-- Benchmark pill vs Lab measurement note -->
+      <div class="benchmark-header">
+        <span class="benchmark-badge" [class.pinned]="raglab.isPinnedPipeline()" [class.lab]="!raglab.isPinnedPipeline()">
+          {{ raglab.isPinnedPipeline() ? 'Mesure de référence (Benchmark officiel)' : 'Mesure de laboratoire (Non benchmark)' }}
+        </span>
+        <span class="note-text" *ngIf="evalResult.note">{{ evalResult.note }}</span>
+      </div>
+
+      <!-- Metrics Summary Table -->
+      <div class="table-card" *ngIf="evalResult.metrics && evalResult.metrics.overall">
+        <div class="table-header">
+          <h4>Métriques globales de récupération</h4>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <span class="metric-title">Questions évaluées</span>
+            <span class="metric-value">{{ evalResult.metrics.overall['n'] || evalResult.questions.length }}</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Hit&#64;1</span>
+            <span class="metric-value">{{ ((evalResult.metrics.overall['hit@1'] || 0) * 100).toFixed(1) }}%</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Hit&#64;3</span>
+            <span class="metric-value">{{ ((evalResult.metrics.overall['hit@3'] || 0) * 100).toFixed(1) }}%</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Hit&#64;5</span>
+            <span class="metric-value">{{ ((evalResult.metrics.overall['hit@5'] || 0) * 100).toFixed(1) }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question by question list -->
+      <div class="table-card" *ngIf="evalResult.questions && evalResult.questions.length > 0">
+        <div class="table-header">
+          <h4>Détail par question ({{ evalResult.questions.length }})</h4>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID Question</th>
+              <th>Langue</th>
+              <th>Catégorie</th>
+              <th>Hit&#64;1</th>
+              <th>Hit&#64;3</th>
+              <th>Hit&#64;5</th>
+              <th>Hors périmètre</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let q of evalResult.questions">
+              <td><code>{{ q.id }}</code></td>
+              <td><span class="badge-tag">{{ q.language | uppercase }}</span></td>
+              <td>{{ q.category }}</td>
+              <td><span [class.tag-ok]="q.hit_at_1" [class.tag-err]="!q.hit_at_1">{{ q.hit_at_1 ? '✓' : '✕' }}</span></td>
+              <td><span [class.tag-ok]="q.hit_at_3" [class.tag-err]="!q.hit_at_3">{{ q.hit_at_3 ? '✓' : '✕' }}</span></td>
+              <td><span [class.tag-ok]="q.hit_at_5" [class.tag-err]="!q.hit_at_5">{{ q.hit_at_5 ? '✓' : '✕' }}</span></td>
+              <td>{{ q.is_out_of_scope ? 'Oui' : 'Non' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. HARNESS 50 TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'harness'">
+    <div class="harness-card">
+      <h4>Sous-processus offline Harness 50</h4>
+      <p class="form-desc">
+        Exécute le banc de test offline de 50 questions en sous-processus autonome (peut durer jusqu'à 900 secondes).
+        La console affiche les dernières lignes du journal de sortie.
+      </p>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="harnessRunning || raglab.isSealed()"
+        (click)="onRunHarness()">
+        <span class="spinner-xs" *ngIf="harnessRunning"></span>
+        <span>{{ harnessRunning ? 'Exécution en cours (jusqu\'à 15 min)…' : 'Exécuter Harness 50' }}</span>
+      </button>
+
+      <!-- Error -->
+      <div class="alert-box error" *ngIf="harnessError">
+        <strong>Erreur : {{ harnessError.reason }}</strong>
+        <p>{{ harnessError.message }}</p>
+      </div>
+
+      <!-- Console Output Tail -->
+      <div class="console-box" *ngIf="harnessResult">
+        <div class="console-header">
+          <span>Sortie du terminal (Code de retour: {{ harnessResult.exit_code }})</span>
+          <span class="report-path" *ngIf="harnessResult.report">Rapport: {{ harnessResult.report }}</span>
+        </div>
+        <pre class="console-content"><code *ngFor="let line of harnessResult.output_tail">{{ line }}
+</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CATALOG TAB -->
+  <div class="tab-pane" *ngIf="activeTab === 'catalog'">
+    <div class="catalog-card">
+      <div class="catalog-header">
+        <div>
+          <h4>Catalogue en direct xKiro</h4>
+          <p class="form-desc">Interroge en temps réel le catalogue de modèles disponibles sur la passerelle xKiro.</p>
+        </div>
+        <button
+          type="button"
+          class="btn-outline-sm"
+          [disabled]="catalogLoading"
+          (click)="onLoadCatalog()">
+          <span class="spinner-xs" *ngIf="catalogLoading"></span>
+          <span>{{ catalogLoading ? 'Chargement…' : 'Interroger le catalogue' }}</span>
+        </button>
+      </div>
+
+      <div class="alert-box error" *ngIf="catalogError">
+        <strong>Erreur : {{ catalogError.reason }}</strong>
+        <p>{{ catalogError.message }}</p>
+      </div>
+
+      <div class="catalog-viewer" *ngIf="catalogResult">
+        <pre class="catalog-json">{{ catalogResult | json }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
